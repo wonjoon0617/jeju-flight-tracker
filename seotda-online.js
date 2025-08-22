@@ -76,26 +76,38 @@ class OnlineSeotdaGame {
 
     async createOrJoinRoom(roomCode = null) {
         try {
+            console.log('createOrJoinRoom 메소드 시작, roomCode:', roomCode);
+            
             // 익명 로그인 먼저 수행
             if (!this.currentUser) {
+                console.log('익명 로그인 시도 중...');
                 await this.signInAnonymously();
+                console.log('익명 로그인 완료');
             }
             
             if (!roomCode) {
                 roomCode = this.generateRoomCode();
                 this.isHost = true;
+                console.log('새 방 코드 생성:', roomCode, 'isHost:', this.isHost);
+            } else {
+                console.log('기존 방 참여 시도, 방 코드:', roomCode);
             }
             
             this.roomCode = roomCode;
             this.gameRef = this.database.ref(`games/${roomCode}`);
+            console.log('Firebase 레퍼런스 생성:', `games/${roomCode}`);
             
             // 방이 존재하는지 확인
+            console.log('방 존재 여부 확인 중...');
             const snapshot = await this.gameRef.once('value');
+            console.log('방 존재 여부:', snapshot.exists(), 'isHost:', this.isHost);
+            
             if (!snapshot.exists() && !this.isHost) {
                 throw new Error('존재하지 않는 방입니다.');
             }
             
             if (this.isHost) {
+                console.log('새 방 생성 중...');
                 // 새 방 생성
                 await this.gameRef.set({
                     host: this.playerId,
@@ -108,20 +120,25 @@ class OnlineSeotdaGame {
                     },
                     createdAt: firebase.database.ServerValue.TIMESTAMP
                 });
+                console.log('새 방 생성 완료');
             }
             
             // 실시간 리스너 설정
+            console.log('실시간 리스너 설정 중...');
             this.setupRealtimeListeners();
             
             // UI 업데이트
+            console.log('UI 업데이트 중...');
             document.getElementById('currentRoom').style.display = 'block';
             document.getElementById('roomCode').textContent = roomCode;
             document.getElementById('playerJoinSection').style.display = 'block';
             document.getElementById('roomBtn').textContent = '방 나가기';
             document.getElementById('roomBtn').onclick = () => this.leaveRoom();
             
+            console.log('createOrJoinRoom 성공');
             return true;
         } catch (error) {
+            console.error('createOrJoinRoom 에러:', error);
             alert('방 생성/참여 실패: ' + error.message);
             return false;
         }
@@ -511,14 +528,30 @@ class OnlineSeotdaGame {
 // 전역 게임 인스턴스
 let game = new OnlineSeotdaGame();
 
+console.log('seotda-online.js 로드됨, 게임 인스턴스 생성됨');
+
 // UI 함수들
-function createOrJoinRoom() {
+console.log('UI 함수들 정의 시작');
+
+window.createOrJoinRoom = async function() {
+    console.log('createOrJoinRoom 함수 호출됨');
     const roomCodeInput = document.getElementById('roomCodeInput');
     const roomCode = roomCodeInput.value.trim().toUpperCase();
-    game.createOrJoinRoom(roomCode || null);
+    console.log('입력된 방 코드:', roomCode);
+    
+    try {
+        console.log('게임 방 생성/참여 시도 중...');
+        const result = await game.createOrJoinRoom(roomCode || null);
+        console.log('방 생성/참여 결과:', result);
+    } catch (error) {
+        console.error('방 생성/참여 중 오류:', error);
+        alert('방 생성/참여 실패: ' + error.message);
+    }
 }
 
-function joinGame() {
+console.log('createOrJoinRoom 함수 정의됨');
+
+window.joinGame = function() {
     const nameInput = document.getElementById('playerNameInput');
     const name = nameInput.value.trim();
     
@@ -536,23 +569,23 @@ function joinGame() {
     });
 }
 
-function startGame() {
+window.startGame = function() {
     game.startGame();
 }
 
-function fold() {
+window.fold = function() {
     game.fold();
 }
 
-function call() {
+window.call = function() {
     game.call();
 }
 
-function raiseOne() {
+window.raiseOne = function() {
     game.raiseOne();
 }
 
-function copyRoomCode() {
+window.copyRoomCode = function() {
     const roomCode = game.roomCode;
     const url = `${window.location.origin}${window.location.pathname}?room=${roomCode}`;
     
@@ -565,19 +598,32 @@ function copyRoomCode() {
     }
 }
 
-function leaveRoom() {
+window.leaveRoom = function() {
     game.leaveRoom();
 }
 
-// 페이지 로드 시 URL에서 방 코드 확인
+// 페이지 로드 시 초기화
 window.addEventListener('load', () => {
+    console.log('페이지 로드됨, 함수 등록 중...');
+    
+    // 버튼 이벤트 직접 등록
+    const roomBtn = document.getElementById('roomBtn');
+    if (roomBtn) {
+        roomBtn.onclick = async function() {
+            console.log('버튼 클릭됨 (직접 등록)');
+            await window.createOrJoinRoom();
+        };
+        console.log('방 만들기 버튼 이벤트 등록됨');
+    }
+    
+    // URL에서 방 코드 확인
     const urlParams = new URLSearchParams(window.location.search);
     const roomCode = urlParams.get('room');
     
     if (roomCode) {
         document.getElementById('roomCodeInput').value = roomCode;
-        setTimeout(() => {
-            createOrJoinRoom();
+        setTimeout(async () => {
+            await window.createOrJoinRoom();
         }, 1000);
     }
 });

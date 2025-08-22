@@ -308,7 +308,7 @@
                 <div class="room-section">
                     <div class="room-controls">
                         <input type="text" id="roomCodeInput" placeholder="방 코드 입력 (없으면 자동 생성)" maxlength="6">
-                        <button class="btn-secondary" onclick="createOrJoinRoom()" id="roomBtn">방 만들기/참여</button>
+                        <button class="btn-secondary" onclick="console.log('버튼 클릭됨'); createOrJoinRoom();" id="roomBtn">방 만들기/참여</button>
                     </div>
                     <div id="currentRoom" style="display: none; margin: 15px 0; padding: 10px; background: rgba(255,255,255,0.1); border-radius: 5px;">
                         <strong>현재 방: <span id="roomCode"></span></strong>
@@ -370,7 +370,7 @@
         const firebaseConfig = {
             apiKey: "AIzaSyBiWExyAPR5KA9LBII7D3Mve9csV87m280",
             authDomain: "joonseotda.firebaseapp.com",
-            databaseURL: "https://joonseotda-default-rtdb.firebaseio.com/",
+            databaseURL: "https://joonseotda-default-rtdb.firebaseio.com",
             projectId: "joonseotda",
             storageBucket: "joonseotda.firebasestorage.app",
             messagingSenderId: "69539002532",
