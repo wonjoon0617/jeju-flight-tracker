@@ -245,6 +245,9 @@ class OnlineSeotdaGame {
         if (gameState.phase === 'playing') {
             document.querySelector('.setup-area').style.display = 'none';
             document.getElementById('gameArea').style.display = 'block';
+        } else if (gameState.phase === 'ended') {
+            console.log('게임 종료 상태 감지, 새 라운드 버튼 표시');
+            this.showNewRoundButton();
         }
         
         this.updateDisplay();
@@ -489,6 +492,7 @@ class OnlineSeotdaGame {
             hasPlayerRaised: this.hasPlayerRaised,
             lastRaiserIndex: this.lastRaiserIndex,
             callCount: this.callCount,
+            gameEnded: this.gamePhase === 'ended' || false,
             players: this.players.map(p => ({
                 id: p.id,
                 name: p.name,
@@ -579,22 +583,25 @@ class OnlineSeotdaGame {
         console.log('라운드 종료 시작');
         const activePlayers = this.players.filter(p => !p.folded);
         
+        // 게임 상태를 'ended'로 설정
+        this.gamePhase = 'ended';
+        
         if (activePlayers.length === 0) {
             this.logAction('모든 플레이어가 다이했습니다. 새 라운드 시작.', 'round');
-            this.showNewRoundButton();
-            return;
-        }
-        
-        if (activePlayers.length === 1) {
+        } else if (activePlayers.length === 1) {
             const winner = activePlayers[0];
             this.logAction(`${winner.name}이(가) 승리!`, 'round');
-            this.showNewRoundButton();
-            return;
+        } else {
+            // 여러 플레이어가 남은 경우 족보 비교
+            this.compareHands(activePlayers);
         }
         
-        // 여러 플레이어가 남은 경우 족보 비교
-        this.compareHands(activePlayers);
         this.showNewRoundButton();
+        
+        // 방장인 경우 게임 종료 상태를 서버에 업데이트
+        if (this.isHost) {
+            this.updateGameStateOnServer();
+        }
     }
 
     compareHands(players) {
@@ -604,12 +611,55 @@ class OnlineSeotdaGame {
     }
 
     showNewRoundButton() {
-        if (this.isHost) {
-            const newRoundBtn = document.getElementById('newRoundBtn');
-            if (newRoundBtn) {
-                newRoundBtn.style.display = 'block';
+        const newRoundBtn = document.getElementById('newRoundBtn');
+        if (newRoundBtn) {
+            // 모든 플레이어가 새 라운드 버튼을 볼 수 있지만, 방장만 클릭 가능
+            newRoundBtn.style.display = 'block';
+            if (!this.isHost) {
+                newRoundBtn.disabled = true;
+                newRoundBtn.textContent = '새 라운드 (방장 대기 중)';
+            } else {
+                newRoundBtn.disabled = false;
+                newRoundBtn.textContent = '새 라운드';
             }
         }
+    }
+
+    newRound() {
+        if (!this.isHost) {
+            alert('방장만 새 라운드를 시작할 수 있습니다.');
+            return;
+        }
+
+        console.log('새 라운드 시작');
+        this.roundNumber++;
+        this.gamePhase = 'playing'; // 게임 상태를 다시 playing으로 설정
+        
+        // 패배자가 있으면 패배자부터 시작, 없으면 기본 순서
+        if (this.lastLoserIndex !== -1) {
+            this.currentPlayerIndex = this.lastLoserIndex;
+        } else {
+            this.currentPlayerIndex = 0;
+        }
+        
+        this.totalBet = 0;
+        this.bettingRound = 1;
+        this.hasPlayerCalled = false;
+        this.hasPlayerRaised = false;
+        this.lastRaiserIndex = -1;
+        this.callCount = 0;
+        
+        for (let player of this.players) {
+            player.folded = false;
+        }
+        
+        this.dealCards();
+        document.getElementById('newRoundBtn').style.display = 'none';
+        this.logAction(`=== 라운드 ${this.roundNumber} 시작 ===`, 'round');
+        
+        // 게임 상태를 서버에 업데이트
+        this.updateGameStateOnServer();
+        this.updateBettingControls();
     }
 
     // 게임 로직 (기존 코드와 동일)
@@ -914,6 +964,10 @@ window.copyRoomCode = function() {
 
 window.leaveRoom = function() {
     game.leaveRoom();
+}
+
+window.newRound = function() {
+    game.newRound();
 }
 
 // 페이지 로드 시 초기화
