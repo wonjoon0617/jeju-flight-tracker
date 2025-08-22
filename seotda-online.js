@@ -18,6 +18,7 @@ class OnlineSeotdaGame {
         this.baseBet = 0;
         this.revealingCards = false;
         this.revealIndex = 0;
+        this.callCount = 0; // 현재 베팅 라운드에서 콜한 플레이어 수
         
         // 온라인 관련
         this.roomCode = null;
@@ -221,6 +222,7 @@ class OnlineSeotdaGame {
         this.hasPlayerCalled = gameState.hasPlayerCalled || false;
         this.hasPlayerRaised = gameState.hasPlayerRaised || false;
         this.lastRaiserIndex = gameState.lastRaiserIndex || -1;
+        this.callCount = gameState.callCount || 0;
         
         console.log(`턴 변경: ${oldPlayerIndex} → ${this.currentPlayerIndex}`);
         
@@ -359,6 +361,8 @@ class OnlineSeotdaGame {
         const currentPlayer = this.players[this.currentPlayerIndex];
         if (currentPlayer) {
             this.hasPlayerCalled = true;
+            this.callCount++;
+            console.log(`콜 카운트 증가: ${this.callCount}`);
             this.logAction(`${currentPlayer.name}이(가) 콜했습니다.`, 'bet');
         }
         
@@ -392,6 +396,8 @@ class OnlineSeotdaGame {
             this.hasPlayerRaised = true;
             this.lastRaiserIndex = this.currentPlayerIndex;
             this.hasPlayerCalled = false;
+            this.callCount = 0; // 레이즈 후 콜 카운트 리셋
+            console.log('레이즈로 인해 콜 카운트 리셋');
             this.logAction(`${currentPlayer.name}이(가) 1잔 올렸습니다. (총 베팅: ${this.totalBet}잔)`, 'bet');
         }
         
@@ -448,6 +454,7 @@ class OnlineSeotdaGame {
             hasPlayerCalled: this.hasPlayerCalled,
             hasPlayerRaised: this.hasPlayerRaised,
             lastRaiserIndex: this.lastRaiserIndex,
+            callCount: this.callCount,
             players: this.players.map(p => ({
                 id: p.id,
                 name: p.name,
@@ -472,7 +479,7 @@ class OnlineSeotdaGame {
         console.log('베팅 라운드 완료 체크:', {
             activePlayers: activePlayers.length,
             totalBet: this.totalBet,
-            hasPlayerCalled: this.hasPlayerCalled,
+            callCount: this.callCount,
             lastRaiserIndex: this.lastRaiserIndex,
             currentPlayerIndex: this.currentPlayerIndex
         });
@@ -483,22 +490,21 @@ class OnlineSeotdaGame {
             return true;
         }
         
-        // 베팅이 없었다면 아직 종료되지 않음
-        if (this.totalBet === 0) {
-            console.log('베팅이 없어서 계속 진행');
-            return false;
+        // 베팅이 있고, 레이즈가 없었을 때: 모든 활성 플레이어가 콜했으면 종료
+        if (this.totalBet > 0 && this.lastRaiserIndex === -1) {
+            if (this.callCount >= activePlayers.length) {
+                console.log(`모든 플레이어가 콜함 (콜: ${this.callCount}, 활성: ${activePlayers.length})`);
+                return true;
+            }
         }
         
-        // 마지막 레이저가 설정되지 않았으면 계속 진행
-        if (this.lastRaiserIndex === -1) {
-            console.log('마지막 레이저가 없어서 계속 진행');
-            return false;
-        }
-        
-        // 현재 플레이어가 마지막으로 베팅한 플레이어이고, 콜이 있었다면 종료
-        if (this.currentPlayerIndex === this.lastRaiserIndex && this.hasPlayerCalled) {
-            console.log('마지막 레이저에게 돌아왔고 콜이 있어서 베팅 종료');
-            return true;
+        // 레이즈가 있었을 때: 레이저를 제외한 모든 플레이어가 콜했으면 종료
+        if (this.totalBet > 0 && this.lastRaiserIndex !== -1) {
+            const needCallCount = activePlayers.length - 1; // 레이저 제외
+            if (this.callCount >= needCallCount) {
+                console.log(`레이저 제외 모든 플레이어가 콜함 (콜: ${this.callCount}, 필요: ${needCallCount})`);
+                return true;
+            }
         }
         
         return false;
@@ -521,7 +527,17 @@ class OnlineSeotdaGame {
             return true; // 게임 종료됨
         }
         
+        // 다음 플레이어로 이동
         this.currentPlayerIndex = this.getNextActivePlayerIndex();
+        console.log('다음 플레이어로 이동:', this.currentPlayerIndex);
+        
+        // 한 바퀴 돌아서 베팅을 시작한 플레이어에게 돌아왔는지 확인
+        if (this.isBettingRoundComplete()) {
+            console.log('nextPlayer에서 베팅 라운드 완료 감지, 게임 종료');
+            this.endRound();
+            return true; // 게임 종료됨
+        }
+        
         return false; // 게임 계속
     }
 
