@@ -277,17 +277,38 @@ class OnlineSeotdaGame {
 
     handleRemoteFold(action) {
         console.log('원격 다이 액션 받음:', action);
-        this.executeFold();
+        // 액션을 보낸 플레이어의 인덱스 찾기
+        const playerIndex = this.players.findIndex(p => p.id === action.playerId);
+        if (playerIndex !== -1) {
+            console.log(`다이 액션 플레이어: ${action.playerId} (인덱스: ${playerIndex})`);
+            this.executeFoldForPlayer(playerIndex);
+        } else {
+            console.log('다이 액션 플레이어를 찾을 수 없음');
+        }
     }
 
     handleRemoteCall(action) {
         console.log('원격 콜 액션 받음:', action);
-        this.executeCall();
+        // 액션을 보낸 플레이어의 인덱스 찾기
+        const playerIndex = this.players.findIndex(p => p.id === action.playerId);
+        if (playerIndex !== -1) {
+            console.log(`콜 액션 플레이어: ${action.playerId} (인덱스: ${playerIndex})`);
+            this.executeCallForPlayer(playerIndex);
+        } else {
+            console.log('콜 액션 플레이어를 찾을 수 없음');
+        }
     }
 
     handleRemoteRaise(action) {
         console.log('원격 레이즈 액션 받음:', action);
-        this.executeRaise();
+        // 액션을 보낸 플레이어의 인덱스 찾기
+        const playerIndex = this.players.findIndex(p => p.id === action.playerId);
+        if (playerIndex !== -1) {
+            console.log(`레이즈 액션 플레이어: ${action.playerId} (인덱스: ${playerIndex})`);
+            this.executeRaiseForPlayer(playerIndex);
+        } else {
+            console.log('레이즈 액션 플레이어를 찾을 수 없음');
+        }
     }
 
     // 로컬 액션들을 서버와 동기화
@@ -327,11 +348,15 @@ class OnlineSeotdaGame {
 
     // 실제 게임 로직 실행 함수들
     executeFold() {
-        console.log('executeFold() 실행, isHost:', this.isHost);
-        const currentPlayer = this.players[this.currentPlayerIndex];
-        if (currentPlayer) {
-            currentPlayer.folded = true;
-            this.logAction(`${currentPlayer.name}이(가) 다이했습니다.`, 'fold');
+        this.executeFoldForPlayer(this.currentPlayerIndex);
+    }
+
+    executeFoldForPlayer(playerIndex) {
+        console.log('executeFoldForPlayer() 실행, playerIndex:', playerIndex, 'isHost:', this.isHost);
+        const player = this.players[playerIndex];
+        if (player) {
+            player.folded = true;
+            this.logAction(`${player.name}이(가) 다이했습니다.`, 'fold');
         }
         
         // 방장만 턴 진행 및 게임 상태 업데이트
@@ -357,13 +382,17 @@ class OnlineSeotdaGame {
     }
 
     executeCall() {
-        console.log('executeCall() 실행, isHost:', this.isHost);
-        const currentPlayer = this.players[this.currentPlayerIndex];
-        if (currentPlayer) {
+        this.executeCallForPlayer(this.currentPlayerIndex);
+    }
+
+    executeCallForPlayer(playerIndex) {
+        console.log('executeCallForPlayer() 실행, playerIndex:', playerIndex, 'isHost:', this.isHost);
+        const player = this.players[playerIndex];
+        if (player) {
             this.hasPlayerCalled = true;
             this.callCount++;
-            console.log(`콜 카운트 증가: ${this.callCount}`);
-            this.logAction(`${currentPlayer.name}이(가) 콜했습니다.`, 'bet');
+            console.log(`콜 카운트 증가: ${this.callCount} (${player.name})`);
+            this.logAction(`${player.name}이(가) 콜했습니다.`, 'bet');
         }
         
         // 방장만 턴 진행 및 게임 상태 업데이트
@@ -389,16 +418,20 @@ class OnlineSeotdaGame {
     }
 
     executeRaise() {
-        console.log('executeRaise() 실행, isHost:', this.isHost);
-        const currentPlayer = this.players[this.currentPlayerIndex];
-        if (currentPlayer) {
+        this.executeRaiseForPlayer(this.currentPlayerIndex);
+    }
+
+    executeRaiseForPlayer(playerIndex) {
+        console.log('executeRaiseForPlayer() 실행, playerIndex:', playerIndex, 'isHost:', this.isHost);
+        const player = this.players[playerIndex];
+        if (player) {
             this.totalBet += 1;
             this.hasPlayerRaised = true;
-            this.lastRaiserIndex = this.currentPlayerIndex;
+            this.lastRaiserIndex = playerIndex; // 올바른 플레이어 인덱스 설정
             this.hasPlayerCalled = false;
             this.callCount = 0; // 레이즈 후 콜 카운트 리셋
-            console.log('레이즈로 인해 콜 카운트 리셋');
-            this.logAction(`${currentPlayer.name}이(가) 1잔 올렸습니다. (총 베팅: ${this.totalBet}잔)`, 'bet');
+            console.log(`레이즈: ${player.name} (인덱스: ${playerIndex}), 콜 카운트 리셋`);
+            this.logAction(`${player.name}이(가) 1잔 올렸습니다. (총 베팅: ${this.totalBet}잔)`, 'bet');
         }
         
         // 방장만 턴 진행 및 게임 상태 업데이트
