@@ -208,10 +208,28 @@ class OnlineSeotdaGame {
     }
 
     updateGameStateFromServer(gameState) {
+        console.log('서버에서 게임 상태 업데이트 받음:', gameState);
+        
         this.gamePhase = gameState.phase;
-        this.currentPlayerIndex = gameState.currentPlayerIndex;
-        this.totalBet = gameState.totalBet;
-        this.roundNumber = gameState.roundNumber;
+        this.currentPlayerIndex = gameState.currentPlayerIndex || 0;
+        this.totalBet = gameState.totalBet || 0;
+        this.roundNumber = gameState.roundNumber || 1;
+        this.bettingRound = gameState.bettingRound || 1;
+        this.hasPlayerCalled = gameState.hasPlayerCalled || false;
+        this.hasPlayerRaised = gameState.hasPlayerRaised || false;
+        this.lastRaiserIndex = gameState.lastRaiserIndex || -1;
+        
+        // 플레이어 상태 업데이트 (방장이 아닌 경우만)
+        if (!this.isHost && gameState.players) {
+            gameState.players.forEach((serverPlayer, index) => {
+                if (this.players[index]) {
+                    this.players[index].folded = serverPlayer.folded || false;
+                    if (serverPlayer.cards && serverPlayer.cards.length > 0) {
+                        this.players[index].cards = serverPlayer.cards;
+                    }
+                }
+            });
+        }
         
         if (gameState.phase === 'playing') {
             document.querySelector('.setup-area').style.display = 'none';
@@ -301,7 +319,13 @@ class OnlineSeotdaGame {
             currentPlayer.folded = true;
             this.logAction(`${currentPlayer.name}이(가) 다이했습니다.`, 'fold');
         }
-        this.nextPlayer();
+        
+        // 방장만 턴 진행 및 게임 상태 업데이트
+        if (this.isHost) {
+            this.nextPlayer();
+            this.updateGameStateOnServer();
+        }
+        this.updateBettingControls();
     }
 
     executeCall() {
@@ -310,7 +334,13 @@ class OnlineSeotdaGame {
             this.hasPlayerCalled = true;
             this.logAction(`${currentPlayer.name}이(가) 콜했습니다.`, 'bet');
         }
-        this.nextPlayer();
+        
+        // 방장만 턴 진행 및 게임 상태 업데이트
+        if (this.isHost) {
+            this.nextPlayer();
+            this.updateGameStateOnServer();
+        }
+        this.updateBettingControls();
     }
 
     executeRaise() {
@@ -322,7 +352,13 @@ class OnlineSeotdaGame {
             this.hasPlayerCalled = false;
             this.logAction(`${currentPlayer.name}이(가) 1잔 올렸습니다. (총 베팅: ${this.totalBet}잔)`, 'bet');
         }
-        this.nextPlayer();
+        
+        // 방장만 턴 진행 및 게임 상태 업데이트
+        if (this.isHost) {
+            this.nextPlayer();
+            this.updateGameStateOnServer();
+        }
+        this.updateBettingControls();
     }
 
     executeStartGame() {
@@ -341,14 +377,23 @@ class OnlineSeotdaGame {
     }
 
     async updateGameStateOnServer() {
-        if (!this.gameRef) return;
+        if (!this.gameRef || !this.isHost) return;
         
         const gameState = {
             phase: this.gamePhase,
             currentPlayerIndex: this.currentPlayerIndex,
             totalBet: this.totalBet,
             roundNumber: this.roundNumber,
-            bettingRound: this.bettingRound
+            bettingRound: this.bettingRound,
+            hasPlayerCalled: this.hasPlayerCalled,
+            hasPlayerRaised: this.hasPlayerRaised,
+            lastRaiserIndex: this.lastRaiserIndex,
+            players: this.players.map(p => ({
+                id: p.id,
+                name: p.name,
+                folded: p.folded || false,
+                cards: p.cards || []
+            }))
         };
         
         console.log('게임 상태 서버 업데이트:', gameState);
@@ -506,6 +551,14 @@ class OnlineSeotdaGame {
         const activePlayers = this.players.filter(p => !p.folded);
         const gameEnded = activePlayers.length <= 1;
         
+        console.log('턴 제어 디버깅:', {
+            currentPlayerIndex: this.currentPlayerIndex,
+            currentPlayer: currentPlayer,
+            myPlayerId: this.playerId,
+            isCurrentUserTurn: isCurrentUserTurn,
+            allPlayers: this.players.map(p => ({id: p.id, name: p.name}))
+        });
+        
         document.getElementById('foldBtn').disabled = !isCurrentUserTurn || gameEnded;
         
         const canCall = isCurrentUserTurn && !gameEnded && this.totalBet > 0;
@@ -523,6 +576,13 @@ class OnlineSeotdaGame {
         
         const raiseBtn = document.getElementById('raiseBtn1');
         raiseBtn.disabled = !canRaise;
+        
+        // 버튼 상태 로그
+        console.log('버튼 상태:', {
+            foldDisabled: !isCurrentUserTurn || gameEnded,
+            callDisabled: !canCall,
+            raiseDisabled: !canRaise
+        });
     }
 
     updateWaitingDisplay() {
