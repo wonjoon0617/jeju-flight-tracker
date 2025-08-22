@@ -296,23 +296,37 @@
         
         <div class="setup-area">
             <div class="join-area" id="joinArea">
-                <h2>섯다 게임 (로컬 멀티플레이어)</h2>
-                <div class="notice" style="background: rgba(255, 193, 7, 0.2); padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #ffc107;">
-                    <h4 style="margin: 0 0 10px 0; color: #ffc107;">⚠️ 주의사항</h4>
+                <h2>섯다 게임 (온라인 멀티플레이어)</h2>
+                <div class="notice" style="background: rgba(76, 175, 80, 0.2); padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #4caf50;">
+                    <h4 style="margin: 0 0 10px 0; color: #4caf50;">🌐 온라인 멀티플레이어</h4>
                     <p style="margin: 0; font-size: 14px;">
-                        이 게임은 <strong>같은 기기에서 여러 플레이어가 돌아가며 플레이</strong>하는 방식입니다.<br>
-                        온라인 멀티플레이어가 아니므로 다른 기기/브라우저의 사람들과는 함께 플레이할 수 없습니다.
+                        이 링크를 친구들과 공유하여 <strong>실시간으로 함께 플레이</strong>하세요!<br>
+                        다른 기기/브라우저에서도 동시에 접속하여 게임할 수 있습니다.
                     </p>
                 </div>
-                <div class="join-controls">
-                    <input type="text" id="playerNameInput" placeholder="플레이어 이름을 입력하세요" maxlength="10">
-                    <button class="btn-primary" onclick="addPlayer()">플레이어 추가</button>
+                
+                <div class="room-section">
+                    <div class="room-controls">
+                        <input type="text" id="roomCodeInput" placeholder="방 코드 입력 (없으면 자동 생성)" maxlength="6">
+                        <button class="btn-secondary" onclick="createOrJoinRoom()" id="roomBtn">방 만들기/참여</button>
+                    </div>
+                    <div id="currentRoom" style="display: none; margin: 15px 0; padding: 10px; background: rgba(255,255,255,0.1); border-radius: 5px;">
+                        <strong>현재 방: <span id="roomCode"></span></strong>
+                        <button onclick="copyRoomCode()" style="margin-left: 10px; padding: 5px 10px; background: #4caf50; color: white; border: none; border-radius: 3px;">링크 복사</button>
+                        <button onclick="leaveRoom()" style="margin-left: 5px; padding: 5px 10px; background: #f44336; color: white; border: none; border-radius: 3px;">방 나가기</button>
+                    </div>
                 </div>
-                <div class="waiting-players">
-                    <h3>참여할 플레이어들</h3>
-                    <div id="waitingPlayersList"></div>
-                    <button class="btn-secondary" onclick="startGame()" id="startGameBtn" style="display: none;">게임 시작 (최소 2명)</button>
-                    <button class="btn-danger" onclick="clearPlayers()" id="clearBtn" style="display: none; margin-left: 10px;">초기화</button>
+                
+                <div id="playerJoinSection" style="display: none;">
+                    <div class="join-controls">
+                        <input type="text" id="playerNameInput" placeholder="닉네임을 입력하세요" maxlength="10">
+                        <button class="btn-primary" onclick="joinGame()">게임 참여</button>
+                    </div>
+                    <div class="waiting-players">
+                        <h3>참여한 플레이어</h3>
+                        <div id="waitingPlayersList"></div>
+                        <button class="btn-secondary" onclick="startGame()" id="startGameBtn" style="display: none;">게임 시작 (최소 2명)</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -346,6 +360,27 @@
         </div>
     </div>
 
-    <script src="seotda.js"></script>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
+    
+    <script>
+        // Firebase 설정
+        const firebaseConfig = {
+            apiKey: "AIzaSyDemo-Key-Replace-With-Actual",
+            authDomain: "seotda-game-demo.firebaseapp.com",
+            databaseURL: "https://seotda-game-demo-default-rtdb.firebaseio.com",
+            projectId: "seotda-game-demo",
+            storageBucket: "seotda-game-demo.appspot.com",
+            messagingSenderId: "123456789012",
+            appId: "1:123456789012:web:abcdef123456789012345"
+        };
+        
+        // Firebase 초기화
+        firebase.initializeApp(firebaseConfig);
+        window.database = firebase.database();
+    </script>
+    
+    <script src="seotda-online.js"></script>
 </body>
 </html>
