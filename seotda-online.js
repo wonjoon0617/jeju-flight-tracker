@@ -241,6 +241,27 @@ class OnlineSeotdaGame {
         }
     }
 
+    // 원격 액션 처리 함수들
+    handleRemoteStartGame(action) {
+        console.log('원격 게임 시작 액션 받음:', action);
+        this.executeStartGame();
+    }
+
+    handleRemoteFold(action) {
+        console.log('원격 다이 액션 받음:', action);
+        this.executeFold();
+    }
+
+    handleRemoteCall(action) {
+        console.log('원격 콜 액션 받음:', action);
+        this.executeCall();
+    }
+
+    handleRemoteRaise(action) {
+        console.log('원격 레이즈 액션 받음:', action);
+        this.executeRaise();
+    }
+
     // 로컬 액션들을 서버와 동기화
     async fold() {
         await this.sendAction('fold');
@@ -305,12 +326,33 @@ class OnlineSeotdaGame {
     }
 
     executeStartGame() {
+        console.log('게임 시작 실행 중...');
         this.gamePhase = 'playing';
         this.dealCards();
         document.querySelector('.setup-area').style.display = 'none';
         document.getElementById('gameArea').style.display = 'block';
         this.logAction('=== 게임 시작 ===', 'round');
         this.updateBettingControls();
+        
+        // 방장인 경우 게임 상태를 Firebase에 업데이트
+        if (this.isHost) {
+            this.updateGameStateOnServer();
+        }
+    }
+
+    async updateGameStateOnServer() {
+        if (!this.gameRef) return;
+        
+        const gameState = {
+            phase: this.gamePhase,
+            currentPlayerIndex: this.currentPlayerIndex,
+            totalBet: this.totalBet,
+            roundNumber: this.roundNumber,
+            bettingRound: this.bettingRound
+        };
+        
+        console.log('게임 상태 서버 업데이트:', gameState);
+        await this.gameRef.child('gameState').update(gameState);
     }
 
     // 게임 로직 (기존 코드와 동일)
