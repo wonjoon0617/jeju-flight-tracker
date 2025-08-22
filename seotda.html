@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>섯다 게임</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #2c5530, #1a3d1f);
+            color: white;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .game-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        
+        .setup-area {
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .join-area {
+            text-align: center;
+        }
+        
+        .join-area h2 {
+            margin-bottom: 20px;
+            color: #ffd700;
+        }
+        
+        .join-controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        
+        .waiting-players {
+            background: rgba(0,0,0,0.2);
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        
+        .waiting-players h3 {
+            margin-bottom: 15px;
+            color: #4ecdc4;
+        }
+        
+        .player-item {
+            background: rgba(255,255,255,0.1);
+            padding: 8px 15px;
+            margin: 5px;
+            border-radius: 20px;
+            display: inline-block;
+        }
+        
+        .player-item.current-user {
+            background: rgba(255,215,0,0.3);
+            border: 2px solid #ffd700;
+        }
+        
+        .game-area {
+            display: none;
+        }
+        
+        .players-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .player {
+            background: rgba(255,255,255,0.1);
+            border: 2px solid transparent;
+            border-radius: 10px;
+            padding: 15px;
+            position: relative;
+        }
+        
+        .player.current-turn {
+            border-color: #ffd700;
+            box-shadow: 0 0 15px rgba(255,215,0,0.5);
+        }
+        
+        .player.folded {
+            opacity: 0.5;
+            background: rgba(128,128,128,0.2);
+        }
+        
+        .player-name {
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .player-cards {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .card {
+            width: 60px;
+            height: 90px;
+            background: white;
+            border: 2px solid #333;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #333;
+            position: relative;
+        }
+        
+        .card.hidden {
+            background: linear-gradient(135deg, #2c3e50, #3498db);
+            color: white;
+        }
+        
+        .card.hidden .card-month,
+        .card.hidden .card-type {
+            display: none;
+        }
+        
+        .card.hidden::after {
+            content: "🎴";
+            font-size: 30px;
+        }
+        
+        .card.gwang {
+            background: linear-gradient(135deg, #ffd700, #ffed4e);
+            border-color: #ff6b35;
+            box-shadow: 0 0 10px rgba(255,215,0,0.8);
+        }
+        
+        .card-month {
+            font-size: 24px;
+        }
+        
+        .card-type {
+            font-size: 12px;
+            margin-top: 5px;
+        }
+        
+        .player-status {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+        }
+        
+        .betting-area {
+            background: rgba(255,255,255,0.15);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .pot-info {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        
+        .betting-controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background: #4caf50;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #45a049;
+        }
+        
+        .btn-danger {
+            background: #f44336;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #da190b;
+        }
+        
+        .btn-warning {
+            background: #ff9800;
+            color: white;
+        }
+        
+        .btn-warning:hover {
+            background: #e68900;
+        }
+        
+        .btn-secondary {
+            background: #607d8b;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #546e7a;
+        }
+        
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .game-info {
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .round-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        
+        .log {
+            max-height: 200px;
+            overflow-y: auto;
+            background: rgba(0,0,0,0.3);
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        
+        .log-entry {
+            margin-bottom: 5px;
+            padding: 2px 0;
+        }
+        
+        .log-bet {
+            color: #ffd700;
+        }
+        
+        .log-fold {
+            color: #ff6b6b;
+        }
+        
+        .log-round {
+            color: #4ecdc4;
+            font-weight: bold;
+        }
+        
+        input[type="number"] {
+            width: 80px;
+            padding: 5px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+        }
+        
+        input[type="text"] {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>🎴 섯다 게임</h1>
+        
+        <div class="setup-area">
+            <div class="join-area" id="joinArea">
+                <h2>섯다 게임 참여</h2>
+                <div class="join-controls">
+                    <input type="text" id="playerNameInput" placeholder="닉네임을 입력하세요" maxlength="10">
+                    <button class="btn-primary" onclick="joinGame()">게임 참여</button>
+                </div>
+                <div class="waiting-players">
+                    <h3>참여한 플레이어</h3>
+                    <div id="waitingPlayersList"></div>
+                    <button class="btn-secondary" onclick="startGame()" id="startGameBtn" style="display: none;">게임 시작 (최소 2명)</button>
+                </div>
+            </div>
+        </div>
+        
+        <div id="gameArea" class="game-area">
+            <div class="game-info">
+                <div class="round-info">
+                    <span>라운드: <span id="roundNumber">1</span></span>
+                    <span>현재 턴: <span id="currentPlayer">-</span></span>
+                    <span>베팅 라운드: <span id="bettingRound">1</span></span>
+                </div>
+                <div class="pot-info">
+                    <strong>팟 (총 베팅): <span id="potAmount">0</span>잔</strong>
+                </div>
+            </div>
+            
+            <div id="playersContainer" class="players-container"></div>
+            
+            <div class="betting-area">
+                <div class="betting-controls">
+                    <button class="btn-danger" onclick="fold()" id="foldBtn">다이 (포기)</button>
+                    <button class="btn-warning" onclick="call()" id="callBtn">콜</button>
+                    <button class="btn-primary" onclick="raiseOne()" id="raiseBtn1">1잔 올리기</button>
+                    <button class="btn-secondary" onclick="newRound()" id="newRoundBtn" style="display: none;">새 라운드</button>
+                </div>
+            </div>
+            
+            <div class="log">
+                <div id="gameLog"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="seotda.js"></script>
+</body>
+</html>
