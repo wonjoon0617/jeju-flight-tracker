@@ -16,7 +16,6 @@ class SeotdaGame {
         this.lastLoserIndex = -1;
         this.lastRaiserIndex = -1;
         this.baseBet = 0;
-        this.currentUserId = this.generateUserId();
         this.revealingCards = false;
         this.revealIndex = 0;
     }
@@ -123,26 +122,18 @@ class SeotdaGame {
         return { value: sum, rank: `${sum}끗`, isSpecial: false };
     }
 
-    joinGame(name) {
+    addPlayer(name) {
         if (this.gamePhase !== 'waiting') return false;
         if (this.players.length >= 8) return false;
         if (this.players.some(p => p.name === name)) return false;
         
-        const playerId = this.generateUserId();
         this.players.push({
-            id: playerId,
             name,
             cards: [],
             folded: false,
             isActive: true,
-            isCurrentUser: false
+            isCurrentPlayer: false
         });
-        
-        // 첫 번째 참여자를 현재 사용자로 설정 (데모용)
-        if (this.players.length === 1) {
-            this.players[0].isCurrentUser = true;
-            this.currentUserId = playerId;
-        }
         
         this.updateWaitingDisplay();
         return true;
@@ -562,20 +553,20 @@ class SeotdaGame {
             }
             
             const handValue = this.calculateHandValue(player.cards, player.folded);
-            const isCurrentUser = player.isCurrentUser;
+            const isCurrentPlayer = index === this.currentPlayerIndex;
             
             playerDiv.innerHTML = `
-                <div class="player-name">${player.name}${isCurrentUser ? ' (나)' : ''}</div>
+                <div class="player-name">${player.name}${isCurrentPlayer ? ' (현재 턴)' : ''}</div>
                 <div class="player-cards">
                     ${player.cards.map(card => `
-                        <div class="card ${card.isGwang ? 'gwang' : ''} ${!isCurrentUser && !this.revealingCards ? 'hidden' : ''}">
+                        <div class="card ${card.isGwang ? 'gwang' : ''} ${this.revealingCards ? '' : ''}">
                             <div class="card-month">${card.month}</div>
                             <div class="card-type">${card.isGwang ? '광' : '월'}</div>
                         </div>
                     `).join('')}
                 </div>
                 <div class="player-status">
-                    <span>족보: ${isCurrentUser || this.revealingCards ? handValue.rank : '???'}</span>
+                    <span>족보: ${handValue.rank}</span>
                 </div>
                 <div class="player-status">
                     <span>상태: ${player.folded ? '다이' : '참여중'}</span>
@@ -589,19 +580,18 @@ class SeotdaGame {
     updateBettingControls() {
         const currentPlayer = this.players[this.currentPlayerIndex];
         const isCurrentPlayerTurn = currentPlayer && !currentPlayer.folded;
-        const isCurrentUserTurn = currentPlayer && currentPlayer.isCurrentUser;
         const activePlayers = this.players.filter(p => !p.folded);
         const gameEnded = activePlayers.length <= 1;
         
-        // 현재 사용자의 차례일 때만 버튼 활성화
-        document.getElementById('foldBtn').disabled = !isCurrentUserTurn || gameEnded;
+        // 모든 플레이어가 차례대로 플레이 (로컬 멀티플레이어)
+        document.getElementById('foldBtn').disabled = !isCurrentPlayerTurn || gameEnded;
         
-        const canCall = isCurrentUserTurn && !gameEnded && this.totalBet > 0;
+        const canCall = isCurrentPlayerTurn && !gameEnded && this.totalBet > 0;
         document.getElementById('callBtn').disabled = !canCall;
         
         let canRaise = false;
         const maxBet = this.baseBet + 4;
-        if (isCurrentUserTurn && !gameEnded && this.totalBet < maxBet) {
+        if (isCurrentPlayerTurn && !gameEnded && this.totalBet < maxBet) {
             if (this.totalBet === this.baseBet) {
                 canRaise = true;
             } else if (this.hasPlayerRaised && !this.hasPlayerCalled) {
@@ -623,15 +613,20 @@ class SeotdaGame {
         const waitingList = document.getElementById('waitingPlayersList');
         waitingList.innerHTML = '';
         
-        this.players.forEach(player => {
+        this.players.forEach((player, index) => {
             const playerItem = document.createElement('div');
-            playerItem.className = `player-item ${player.isCurrentUser ? 'current-user' : ''}`;
-            playerItem.textContent = `${player.name}${player.isCurrentUser ? ' (나)' : ''}`;
+            playerItem.className = 'player-item';
+            playerItem.innerHTML = `
+                ${player.name}
+                <button onclick="removePlayer(${index})" style="margin-left: 10px; padding: 2px 8px; background: #ff6b6b; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 12px;">제거</button>
+            `;
             waitingList.appendChild(playerItem);
         });
         
         const startBtn = document.getElementById('startGameBtn');
+        const clearBtn = document.getElementById('clearBtn');
         startBtn.style.display = this.players.length >= 2 ? 'inline-block' : 'none';
+        clearBtn.style.display = this.players.length > 0 ? 'inline-block' : 'none';
     }
 
     logAction(message, type = '') {
@@ -669,23 +664,40 @@ class SeotdaGame {
 
 let game = new SeotdaGame();
 
-function joinGame() {
+function addPlayer() {
     const nameInput = document.getElementById('playerNameInput');
     const name = nameInput.value.trim();
     
     if (!name) {
-        alert('닉네임을 입력해주세요');
+        alert('플레이어 이름을 입력해주세요');
         return;
     }
     
-    if (game.joinGame(name)) {
+    if (game.addPlayer(name)) {
         nameInput.value = '';
-        nameInput.placeholder = '대기중...';
-        nameInput.disabled = true;
-        document.querySelector('button[onclick="joinGame()"]').style.display = 'none';
     } else {
-        alert('참여할 수 없습니다. (중복 닉네임 또는 게임 진행중)');
+        alert('추가할 수 없습니다. (중복 이름, 최대 8명, 또는 게임 진행중)');
     }
+}
+
+function removePlayer(index) {
+    if (game.gamePhase !== 'waiting') {
+        alert('게임 진행 중에는 플레이어를 제거할 수 없습니다');
+        return;
+    }
+    
+    game.players.splice(index, 1);
+    game.updateWaitingDisplay();
+}
+
+function clearPlayers() {
+    if (game.gamePhase !== 'waiting') {
+        alert('게임 진행 중에는 플레이어를 제거할 수 없습니다');
+        return;
+    }
+    
+    game.players = [];
+    game.updateWaitingDisplay();
 }
 
 function startGame() {
