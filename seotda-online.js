@@ -215,16 +215,17 @@ class OnlineSeotdaGame {
         const oldPlayerIndex = this.currentPlayerIndex;
         
         this.gamePhase = gameState.phase;
-        this.currentPlayerIndex = gameState.currentPlayerIndex || 0;
-        this.totalBet = gameState.totalBet || 0;
-        this.roundNumber = gameState.roundNumber || 1;
-        this.bettingRound = gameState.bettingRound || 1;
-        this.hasPlayerCalled = gameState.hasPlayerCalled || false;
-        this.hasPlayerRaised = gameState.hasPlayerRaised || false;
-        this.lastRaiserIndex = gameState.lastRaiserIndex || -1;
-        this.callCount = gameState.callCount || 0;
+        this.currentPlayerIndex = gameState.currentPlayerIndex ?? 0;
+        this.totalBet = gameState.totalBet ?? 0;
+        this.roundNumber = gameState.roundNumber ?? 1;
+        this.bettingRound = gameState.bettingRound ?? 1;
+        this.hasPlayerCalled = gameState.hasPlayerCalled ?? false;
+        this.hasPlayerRaised = gameState.hasPlayerRaised ?? false;
+        this.lastRaiserIndex = gameState.lastRaiserIndex ?? -1; // ?? 사용으로 0 값도 보존
+        this.callCount = gameState.callCount ?? 0;
         
         console.log(`턴 변경: ${oldPlayerIndex} → ${this.currentPlayerIndex}`);
+        console.log(`lastRaiserIndex 설정: ${gameState.lastRaiserIndex} → ${this.lastRaiserIndex}`);
         
         // 플레이어 상태 업데이트 (방장이 아닌 경우만)
         if (!this.isHost && gameState.players) {
