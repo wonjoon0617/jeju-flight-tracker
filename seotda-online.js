@@ -335,8 +335,18 @@ class OnlineSeotdaGame {
         // 방장만 턴 진행 및 게임 상태 업데이트
         if (this.isHost) {
             console.log('방장이 다이 후 턴 진행 중... 현재 턴:', this.currentPlayerIndex);
-            this.nextPlayer();
-            console.log('다이 후 다음 턴으로 이동됨:', this.currentPlayerIndex);
+            
+            // 게임 종료 조건 확인
+            if (this.isBettingRoundComplete()) {
+                console.log('베팅 라운드 완료, 라운드 종료');
+                this.endRound();
+            } else if (this.nextPlayer()) {
+                console.log('게임이 종료됨');
+                return;
+            } else {
+                console.log('다이 후 다음 턴으로 이동됨:', this.currentPlayerIndex);
+            }
+            
             this.updateGameStateOnServer();
         } else {
             console.log('방장이 아니므로 다이 후 턴 진행 안함');
@@ -355,8 +365,18 @@ class OnlineSeotdaGame {
         // 방장만 턴 진행 및 게임 상태 업데이트
         if (this.isHost) {
             console.log('방장이 콜 후 턴 진행 중... 현재 턴:', this.currentPlayerIndex);
-            this.nextPlayer();
-            console.log('콜 후 다음 턴으로 이동됨:', this.currentPlayerIndex);
+            
+            // 게임 종료 조건 확인
+            if (this.isBettingRoundComplete()) {
+                console.log('베팅 라운드 완료, 라운드 종료');
+                this.endRound();
+            } else if (this.nextPlayer()) {
+                console.log('게임이 종료됨');
+                return;
+            } else {
+                console.log('콜 후 다음 턴으로 이동됨:', this.currentPlayerIndex);
+            }
+            
             this.updateGameStateOnServer();
         } else {
             console.log('방장이 아니므로 콜 후 턴 진행 안함');
@@ -378,8 +398,15 @@ class OnlineSeotdaGame {
         // 방장만 턴 진행 및 게임 상태 업데이트
         if (this.isHost) {
             console.log('방장이 레이즈 후 턴 진행 중... 현재 턴:', this.currentPlayerIndex);
-            this.nextPlayer();
-            console.log('레이즈 후 다음 턴으로 이동됨:', this.currentPlayerIndex);
+            
+            // 레이즈 후에는 바로 다음 플레이어로
+            if (this.nextPlayer()) {
+                console.log('게임이 종료됨');
+                return;
+            } else {
+                console.log('레이즈 후 다음 턴으로 이동됨:', this.currentPlayerIndex);
+            }
+            
             this.updateGameStateOnServer();
         } else {
             console.log('방장이 아니므로 레이즈 후 턴 진행 안함');
@@ -436,6 +463,102 @@ class OnlineSeotdaGame {
             console.log('✅ 게임 상태 서버 업데이트 완료');
         } catch (error) {
             console.error('❌ 게임 상태 서버 업데이트 실패:', error);
+        }
+    }
+
+    // 게임 종료 및 베팅 로직
+    isBettingRoundComplete() {
+        const activePlayers = this.players.filter(p => !p.folded);
+        console.log('베팅 라운드 완료 체크:', {
+            activePlayers: activePlayers.length,
+            totalBet: this.totalBet,
+            hasPlayerCalled: this.hasPlayerCalled,
+            lastRaiserIndex: this.lastRaiserIndex,
+            currentPlayerIndex: this.currentPlayerIndex
+        });
+        
+        // 활성 플레이어가 1명 이하면 베팅 종료
+        if (activePlayers.length <= 1) {
+            console.log('활성 플레이어가 1명 이하로 베팅 종료');
+            return true;
+        }
+        
+        // 베팅이 없었다면 아직 종료되지 않음
+        if (this.totalBet === 0) {
+            console.log('베팅이 없어서 계속 진행');
+            return false;
+        }
+        
+        // 마지막 레이저가 설정되지 않았으면 계속 진행
+        if (this.lastRaiserIndex === -1) {
+            console.log('마지막 레이저가 없어서 계속 진행');
+            return false;
+        }
+        
+        // 현재 플레이어가 마지막으로 베팅한 플레이어이고, 콜이 있었다면 종료
+        if (this.currentPlayerIndex === this.lastRaiserIndex && this.hasPlayerCalled) {
+            console.log('마지막 레이저에게 돌아왔고 콜이 있어서 베팅 종료');
+            return true;
+        }
+        
+        return false;
+    }
+
+    getNextActivePlayerIndex() {
+        let nextIndex = (this.currentPlayerIndex + 1) % this.players.length;
+        while (this.players[nextIndex] && this.players[nextIndex].folded && nextIndex !== this.currentPlayerIndex) {
+            nextIndex = (nextIndex + 1) % this.players.length;
+        }
+        return nextIndex;
+    }
+
+    nextPlayer() {
+        const activePlayers = this.players.filter(p => !p.folded);
+        
+        if (activePlayers.length <= 1) {
+            console.log('활성 플레이어가 1명 이하, 게임 종료');
+            this.endRound();
+            return true; // 게임 종료됨
+        }
+        
+        this.currentPlayerIndex = this.getNextActivePlayerIndex();
+        return false; // 게임 계속
+    }
+
+    endRound() {
+        console.log('라운드 종료 시작');
+        const activePlayers = this.players.filter(p => !p.folded);
+        
+        if (activePlayers.length === 0) {
+            this.logAction('모든 플레이어가 다이했습니다. 새 라운드 시작.', 'round');
+            this.showNewRoundButton();
+            return;
+        }
+        
+        if (activePlayers.length === 1) {
+            const winner = activePlayers[0];
+            this.logAction(`${winner.name}이(가) 승리!`, 'round');
+            this.showNewRoundButton();
+            return;
+        }
+        
+        // 여러 플레이어가 남은 경우 족보 비교
+        this.compareHands(activePlayers);
+        this.showNewRoundButton();
+    }
+
+    compareHands(players) {
+        // 간단한 승부 판정 (실제로는 더 복잡한 로직 필요)
+        const winner = players[0]; // 임시로 첫 번째 플레이어를 승자로
+        this.logAction(`족보 비교 결과: ${winner.name}이(가) 승리!`, 'round');
+    }
+
+    showNewRoundButton() {
+        if (this.isHost) {
+            const newRoundBtn = document.getElementById('newRoundBtn');
+            if (newRoundBtn) {
+                newRoundBtn.style.display = 'block';
+            }
         }
     }
 
