@@ -208,7 +208,10 @@ class OnlineSeotdaGame {
     }
 
     updateGameStateFromServer(gameState) {
-        console.log('서버에서 게임 상태 업데이트 받음:', gameState);
+        console.log('📥 서버에서 게임 상태 업데이트 받음:', gameState);
+        console.log('현재 내 상태 - isHost:', this.isHost, 'playerId:', this.playerId);
+        
+        const oldPlayerIndex = this.currentPlayerIndex;
         
         this.gamePhase = gameState.phase;
         this.currentPlayerIndex = gameState.currentPlayerIndex || 0;
@@ -219,8 +222,11 @@ class OnlineSeotdaGame {
         this.hasPlayerRaised = gameState.hasPlayerRaised || false;
         this.lastRaiserIndex = gameState.lastRaiserIndex || -1;
         
+        console.log(`턴 변경: ${oldPlayerIndex} → ${this.currentPlayerIndex}`);
+        
         // 플레이어 상태 업데이트 (방장이 아닌 경우만)
         if (!this.isHost && gameState.players) {
+            console.log('방장이 아니므로 플레이어 상태 동기화');
             gameState.players.forEach((serverPlayer, index) => {
                 if (this.players[index]) {
                     this.players[index].folded = serverPlayer.folded || false;
@@ -229,6 +235,8 @@ class OnlineSeotdaGame {
                     }
                 }
             });
+        } else if (this.isHost) {
+            console.log('방장이므로 플레이어 상태 동기화 건너뜀');
         }
         
         if (gameState.phase === 'playing') {
@@ -282,17 +290,20 @@ class OnlineSeotdaGame {
 
     // 로컬 액션들을 서버와 동기화
     async fold() {
+        console.log('fold() 호출됨, playerId:', this.playerId);
         await this.sendAction('fold');
         // 로컬에서도 실행
         this.executeFold();
     }
 
     async call() {
+        console.log('call() 호출됨, playerId:', this.playerId);
         await this.sendAction('call');
         this.executeCall();
     }
 
     async raiseOne() {
+        console.log('raiseOne() 호출됨, playerId:', this.playerId);
         await this.sendAction('raise', { amount: 1 });
         this.executeRaise();
     }
@@ -314,6 +325,7 @@ class OnlineSeotdaGame {
 
     // 실제 게임 로직 실행 함수들
     executeFold() {
+        console.log('executeFold() 실행, isHost:', this.isHost);
         const currentPlayer = this.players[this.currentPlayerIndex];
         if (currentPlayer) {
             currentPlayer.folded = true;
@@ -322,13 +334,18 @@ class OnlineSeotdaGame {
         
         // 방장만 턴 진행 및 게임 상태 업데이트
         if (this.isHost) {
+            console.log('방장이 다이 후 턴 진행 중... 현재 턴:', this.currentPlayerIndex);
             this.nextPlayer();
+            console.log('다이 후 다음 턴으로 이동됨:', this.currentPlayerIndex);
             this.updateGameStateOnServer();
+        } else {
+            console.log('방장이 아니므로 다이 후 턴 진행 안함');
         }
         this.updateBettingControls();
     }
 
     executeCall() {
+        console.log('executeCall() 실행, isHost:', this.isHost);
         const currentPlayer = this.players[this.currentPlayerIndex];
         if (currentPlayer) {
             this.hasPlayerCalled = true;
@@ -337,13 +354,18 @@ class OnlineSeotdaGame {
         
         // 방장만 턴 진행 및 게임 상태 업데이트
         if (this.isHost) {
+            console.log('방장이 콜 후 턴 진행 중... 현재 턴:', this.currentPlayerIndex);
             this.nextPlayer();
+            console.log('콜 후 다음 턴으로 이동됨:', this.currentPlayerIndex);
             this.updateGameStateOnServer();
+        } else {
+            console.log('방장이 아니므로 콜 후 턴 진행 안함');
         }
         this.updateBettingControls();
     }
 
     executeRaise() {
+        console.log('executeRaise() 실행, isHost:', this.isHost);
         const currentPlayer = this.players[this.currentPlayerIndex];
         if (currentPlayer) {
             this.totalBet += 1;
@@ -355,8 +377,12 @@ class OnlineSeotdaGame {
         
         // 방장만 턴 진행 및 게임 상태 업데이트
         if (this.isHost) {
+            console.log('방장이 레이즈 후 턴 진행 중... 현재 턴:', this.currentPlayerIndex);
             this.nextPlayer();
+            console.log('레이즈 후 다음 턴으로 이동됨:', this.currentPlayerIndex);
             this.updateGameStateOnServer();
+        } else {
+            console.log('방장이 아니므로 레이즈 후 턴 진행 안함');
         }
         this.updateBettingControls();
     }
@@ -377,7 +403,14 @@ class OnlineSeotdaGame {
     }
 
     async updateGameStateOnServer() {
-        if (!this.gameRef || !this.isHost) return;
+        if (!this.gameRef) {
+            console.log('gameRef가 없어서 서버 업데이트 건너뜀');
+            return;
+        }
+        if (!this.isHost) {
+            console.log('방장이 아니므로 서버 업데이트 건너뜀');
+            return;
+        }
         
         const gameState = {
             phase: this.gamePhase,
@@ -393,11 +426,17 @@ class OnlineSeotdaGame {
                 name: p.name,
                 folded: p.folded || false,
                 cards: p.cards || []
-            }))
+            })),
+            lastUpdated: firebase.database.ServerValue.TIMESTAMP
         };
         
-        console.log('게임 상태 서버 업데이트:', gameState);
-        await this.gameRef.child('gameState').update(gameState);
+        console.log('📤 게임 상태 서버 업데이트 시작:', gameState);
+        try {
+            await this.gameRef.child('gameState').update(gameState);
+            console.log('✅ 게임 상태 서버 업데이트 완료');
+        } catch (error) {
+            console.error('❌ 게임 상태 서버 업데이트 실패:', error);
+        }
     }
 
     // 게임 로직 (기존 코드와 동일)
