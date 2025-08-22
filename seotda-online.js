@@ -24,7 +24,9 @@ class OnlineSeotdaGame {
         this.playerId = this.generatePlayerId();
         this.isHost = false;
         this.database = window.database;
+        this.auth = window.auth;
         this.gameRef = null;
+        this.currentUser = null;
     }
 
     generatePlayerId() {
@@ -33,6 +35,18 @@ class OnlineSeotdaGame {
 
     generateRoomCode() {
         return Math.random().toString(36).substr(2, 6).toUpperCase();
+    }
+
+    async signInAnonymously() {
+        try {
+            const result = await this.auth.signInAnonymously();
+            this.currentUser = result.user;
+            console.log('익명 로그인 성공:', this.currentUser.uid);
+            return this.currentUser;
+        } catch (error) {
+            console.error('익명 로그인 실패:', error);
+            throw error;
+        }
     }
 
     createDeck() {
@@ -62,6 +76,11 @@ class OnlineSeotdaGame {
 
     async createOrJoinRoom(roomCode = null) {
         try {
+            // 익명 로그인 먼저 수행
+            if (!this.currentUser) {
+                await this.signInAnonymously();
+            }
+            
             if (!roomCode) {
                 roomCode = this.generateRoomCode();
                 this.isHost = true;

@@ -362,23 +362,25 @@
 
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
     
     <script>
-        // Firebase 설정
+        // Firebase 설정 - 실제 config로 교체 필요
         const firebaseConfig = {
-            apiKey: "AIzaSyDemo-Key-Replace-With-Actual",
-            authDomain: "seotda-game-demo.firebaseapp.com",
-            databaseURL: "https://seotda-game-demo-default-rtdb.firebaseio.com",
-            projectId: "seotda-game-demo",
-            storageBucket: "seotda-game-demo.appspot.com",
-            messagingSenderId: "123456789012",
-            appId: "1:123456789012:web:abcdef123456789012345"
+            apiKey: "YOUR_ACTUAL_API_KEY",
+            authDomain: "YOUR_PROJECT.firebaseapp.com",
+            databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com/",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
         };
         
         // Firebase 초기화
         firebase.initializeApp(firebaseConfig);
         window.database = firebase.database();
+        window.auth = firebase.auth();
     </script>
     
     <script src="seotda-online.js"></script>
