@@ -682,9 +682,22 @@ class OnlineSeotdaGame {
         } else {
             // 여러 명 살아있는 경우: 살아있는 플레이어 중 최저 족보가 패배
             console.log('여러 명 살아있음, 최저 족보 찾기');
-            loser = alivePlayers.reduce((worst, current) => 
-                current.handValue.value < worst.handValue.value ? current : worst
-            );
+            
+            // 최저 족보 값 찾기
+            const minValue = Math.min(...alivePlayers.map(p => p.handValue.value));
+            const losers = alivePlayers.filter(p => p.handValue.value === minValue);
+            
+            // 같은 족보가 여러 명이면 비기기
+            if (losers.length > 1) {
+                console.log(`같은 최저 족보 ${losers.length}명: ${losers.map(l => l.player.name).join(', ')} (${losers[0].handValue.rank})`);
+                console.log('비기기! 베팅 유지하고 다음 판 진행');
+                
+                // 비기기 처리
+                this.handleTie(losers);
+                return; // 여기서 종료하여 일반적인 패배자 처리 방지
+            }
+            
+            loser = losers[0];
         }
         
         // 패배자 기록 (다음 라운드 시작 순서용)
@@ -720,6 +733,37 @@ class OnlineSeotdaGame {
         return deadPlayers.reduce((highest, current) => 
             current.handValue.value > highest.handValue.value ? current : highest
         );
+    }
+    
+    handleTie(players) {
+        // 비기기 상황 처리: 베팅 유지하고 다음 판 진행
+        const playerNames = players.map(p => p.player.name).join(', ');
+        const tieMessage = `비기기! ${playerNames} 모두 ${players[0].handValue.rank} - 베팅 유지하고 다음 판 진행`;
+        
+        this.logAction(tieMessage, 'round');
+        
+        // 서버를 통해 비기기 결과 전파
+        if (this.isHost) {
+            this.sendAction('game_result', { 
+                message: tieMessage,
+                isTie: true,
+                tiedPlayers: playerNames
+            });
+        }
+        
+        // 게임 상태를 서버에 동기화 (카드 공개 상태 포함)
+        console.log(`🔄 방장이 서버에 revealingCards=${this.revealingCards} 상태 전송 중... (비기기)`);
+        this.updateGameStateOnServer();
+        
+        // 결과 표시를 위해 화면 업데이트
+        this.updateDisplay();
+        
+        // 베팅 버튼들 비활성화
+        this.updateBettingControls();
+        
+        // 비기기 상황에서는 베팅을 유지하고 새 라운드로 바로 진행
+        // lastLoserIndex는 설정하지 않음 (순서 변경 없음)
+        this.showNewRoundButton();
     }
 
     showNewRoundButton() {
