@@ -1086,10 +1086,18 @@ class OnlineSeotdaGame {
         console.log(`베팅 한도 체크: 기준 ${this.baseBet}잔 + 4 = 최대 ${maxBet}잔, 현재 ${this.totalBet}잔`);
         if (isCurrentUserTurn && !gameEnded && this.totalBet < maxBet) {
             if (this.totalBet === this.baseBet) {
+                // 베팅이 기준점과 같으면 항상 레이즈 가능 (신규 라운드 or 베팅 유지)
                 canRaise = true;
+                console.log(`레이즈 가능: totalBet(${this.totalBet}) === baseBet(${this.baseBet})`);
             } else if (this.hasPlayerRaised && !this.hasPlayerCalled) {
+                // 누군가 레이즈했지만 아직 콜하지 않은 상태에서만 추가 레이즈 가능
                 canRaise = true;
+                console.log(`레이즈 가능: 레이즈 후 콜 대기 상태`);
+            } else {
+                console.log(`레이즈 불가: totalBet(${this.totalBet}) !== baseBet(${this.baseBet}), hasPlayerRaised: ${this.hasPlayerRaised}, hasPlayerCalled: ${this.hasPlayerCalled}`);
             }
+        } else {
+            console.log(`레이즈 불가: 턴(${isCurrentUserTurn}), 게임종료(${gameEnded}), 한도초과(${this.totalBet} >= ${maxBet})`);
         }
         
         const raiseBtn = document.getElementById('raiseBtn1');
@@ -1097,6 +1105,13 @@ class OnlineSeotdaGame {
         
         // 버튼 상태 로그
         console.log('버튼 상태:', {
+            isCurrentUserTurn,
+            gameEnded,
+            totalBet: this.totalBet,
+            baseBet: this.baseBet,
+            maxBet,
+            hasPlayerRaised: this.hasPlayerRaised,
+            hasPlayerCalled: this.hasPlayerCalled,
             foldDisabled: !isCurrentUserTurn || gameEnded,
             callDisabled: !canCall,
             raiseDisabled: !canRaise
