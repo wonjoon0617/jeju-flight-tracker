@@ -20,6 +20,7 @@ class OnlineSeotdaGame {
         this.revealIndex = 0;
         this.callCount = 0; // 현재 베팅 라운드에서 콜한 플레이어 수
         this.keepBetting = false; // 무승부나 구사파토 시 베팅 유지 플래그
+        this.lastActionTime = 0; // 중복 액션 방지용 타임스탬프
         
         // 온라인 관련
         this.roomCode = null;
@@ -193,6 +194,13 @@ class OnlineSeotdaGame {
 
     async sendAction(actionType, data = {}) {
         if (!this.roomCode) return;
+
+        // 중복 액션 방지를 위한 임시 딜레이
+        if (this.lastActionTime && Date.now() - this.lastActionTime < 100) {
+            console.log(`액션 중복 방지: ${actionType} 무시됨`);
+            return;
+        }
+        this.lastActionTime = Date.now();
 
         const action = {
             type: actionType,
