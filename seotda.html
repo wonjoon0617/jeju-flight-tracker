@@ -350,7 +350,7 @@
                     <button class="btn-danger" onclick="fold()" id="foldBtn">다이 (포기)</button>
                     <button class="btn-warning" onclick="call()" id="callBtn">콜</button>
                     <button class="btn-primary" onclick="raiseOne()" id="raiseBtn1">1잔 올리기</button>
-                    <button class="btn-secondary" onclick="newRound()" id="newRoundBtn" style="display: none;">새 라운드</button>
+                    <button class="btn-secondary" onclick="if(window.newRound) window.newRound(); else console.error('newRound function not found');" id="newRoundBtn" style="display: none;">새 라운드</button>
                 </div>
             </div>
             
