@@ -218,6 +218,7 @@ class OnlineSeotdaGame {
         this.gamePhase = gameState.phase;
         this.currentPlayerIndex = gameState.currentPlayerIndex ?? 0;
         this.totalBet = gameState.totalBet ?? 0;
+        this.baseBet = gameState.baseBet ?? 0;
         this.roundNumber = gameState.roundNumber ?? 1;
         this.bettingRound = gameState.bettingRound ?? 1;
         this.hasPlayerCalled = gameState.hasPlayerCalled ?? false;
@@ -543,6 +544,7 @@ class OnlineSeotdaGame {
             phase: this.gamePhase,
             currentPlayerIndex: this.currentPlayerIndex,
             totalBet: this.totalBet,
+            baseBet: this.baseBet,
             roundNumber: this.roundNumber,
             bettingRound: this.bettingRound,
             hasPlayerCalled: this.hasPlayerCalled,
@@ -875,11 +877,14 @@ class OnlineSeotdaGame {
             this.currentPlayerIndex = 0;
         }
         
-        // 베팅 유지 여부에 따라 totalBet 처리
+        // 베팅 유지 여부에 따라 totalBet 및 baseBet 처리
         if (!this.keepBetting) {
             this.totalBet = 0;
+            this.baseBet = 0;
         } else {
             console.log(`베팅 유지: ${this.totalBet}잔`);
+            this.baseBet = this.totalBet; // 현재 베팅을 기준점으로 설정
+            console.log(`베팅 기준점 설정: ${this.baseBet}잔 → 최대 ${this.baseBet + 4}잔까지 가능`);
         }
         
         this.bettingRound = 1;
@@ -1078,6 +1083,7 @@ class OnlineSeotdaGame {
         
         let canRaise = false;
         const maxBet = this.baseBet + 4;
+        console.log(`베팅 한도 체크: 기준 ${this.baseBet}잔 + 4 = 최대 ${maxBet}잔, 현재 ${this.totalBet}잔`);
         if (isCurrentUserTurn && !gameEnded && this.totalBet < maxBet) {
             if (this.totalBet === this.baseBet) {
                 canRaise = true;
