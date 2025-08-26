@@ -912,6 +912,11 @@ class OnlineSeotdaGame {
     }
 
     logAction(message, type = '') {
+        // 승리 메시지 추적을 위한 로그
+        if (message.includes('승리')) {
+            console.error('🚨 승리 메시지 감지! 호출 스택:', new Error().stack);
+        }
+        
         const logEntry = document.createElement('div');
         logEntry.className = `log-entry log-${type}`;
         logEntry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
