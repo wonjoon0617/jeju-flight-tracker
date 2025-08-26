@@ -290,9 +290,12 @@ class OnlineSeotdaGame {
     }
 
     handleRemoteGameResult(action) {
-        console.log('원격 게임 결과 액션 받음:', action);
+        console.log('🎯 원격 게임 결과 액션 받음:', action);
         if (action.data && action.data.message) {
+            console.log('📢 게임 결과 메시지 표시:', action.data.message);
             this.logAction(action.data.message, 'round');
+        } else {
+            console.error('❌ 게임 결과 데이터가 없음:', action);
         }
     }
 
@@ -774,7 +777,7 @@ class OnlineSeotdaGame {
 
     // 게임 로직 (기존 코드와 동일)
     calculateHandValue(cards, isFolded = false) {
-        if (cards.length !== 2) return { value: 0, rank: '없음', isSpecial: false };
+        if (!cards || cards.length !== 2) return { value: 0, rank: '없음', isSpecial: false };
         
         const [card1, card2] = cards;
         const months = cards.map(c => c.month).sort((a, b) => a - b);
