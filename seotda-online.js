@@ -223,6 +223,7 @@ class OnlineSeotdaGame {
         this.hasPlayerRaised = gameState.hasPlayerRaised ?? false;
         this.lastRaiserIndex = gameState.lastRaiserIndex ?? -1; // ?? 사용으로 0 값도 보존
         this.callCount = gameState.callCount ?? 0;
+        this.revealingCards = gameState.revealingCards ?? false;
         
         console.log(`턴 변경: ${oldPlayerIndex} → ${this.currentPlayerIndex}`);
         console.log(`lastRaiserIndex 설정: ${gameState.lastRaiserIndex} → ${this.lastRaiserIndex}`);
@@ -493,6 +494,7 @@ class OnlineSeotdaGame {
             lastRaiserIndex: this.lastRaiserIndex,
             callCount: this.callCount,
             gameEnded: this.gamePhase === 'ended' || false,
+            revealingCards: this.revealingCards || false,
             players: this.players.map(p => ({
                 id: p.id,
                 name: p.name,
@@ -616,10 +618,15 @@ class OnlineSeotdaGame {
             const player = players[i];
             const handValue = this.calculateHandValue(player.cards, player.folded);
             
+            // 디버깅 로그 추가
+            console.log(`${player.name}: ${handValue.rank} (값: ${handValue.value})`);
+            console.log(`현재 최고: ${bestPlayer.name}: ${bestValue.rank} (값: ${bestValue.value})`);
+            
             // 더 높은 족보를 가진 플레이어 찾기
             if (handValue.value > bestValue.value) {
                 bestPlayer = player;
                 bestValue = handValue;
+                console.log(`새로운 승자: ${bestPlayer.name}`);
             }
         }
         
@@ -627,6 +634,9 @@ class OnlineSeotdaGame {
         this.lastLoserIndex = this.players.findIndex(p => p.id === bestPlayer.id);
         
         this.logAction(`족보 비교 결과: ${bestPlayer.name}이(가) 승리! (${bestValue.rank})`, 'round');
+        
+        // 게임 상태를 서버에 동기화 (카드 공개 상태 포함)
+        this.updateGameStateOnServer();
         
         // 결과 표시를 위해 화면 업데이트
         this.updateDisplay();
