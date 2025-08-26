@@ -290,6 +290,12 @@ class OnlineSeotdaGame {
     }
 
     handleRemoteGameResult(action) {
+        // 방장은 이미 로컬에서 결과를 표시했으므로 중복 방지
+        if (this.isHost) {
+            console.log('🎯 방장은 원격 게임 결과 액션 무시 (중복 방지)');
+            return;
+        }
+        
         console.log('🎯 원격 게임 결과 액션 받음:', action);
         if (action.data && action.data.message) {
             console.log('📢 게임 결과 메시지 표시:', action.data.message);
@@ -680,12 +686,15 @@ class OnlineSeotdaGame {
             console.log('모두 죽음, 죽은 플레이어 중 최고 족보가 패배');
             loser = this.findLoserAmongDead(deadPlayers);
         } else {
-            // 여러 명 살아있는 경우: 살아있는 플레이어 중 최저 족보가 패배
-            console.log('여러 명 살아있음, 최저 족보 찾기');
+            // 여러 명 살아있는 경우: 특수족보 규칙 적용 후 최저 족보가 패배
+            console.log('여러 명 살아있음, 특수족보 규칙 적용');
+            
+            // 특수족보 규칙 적용
+            const processedPlayers = this.applySpecialHandRules(alivePlayers);
             
             // 최저 족보 값 찾기
-            const minValue = Math.min(...alivePlayers.map(p => p.handValue.value));
-            const losers = alivePlayers.filter(p => p.handValue.value === minValue);
+            const minValue = Math.min(...processedPlayers.map(p => p.handValue.value));
+            const losers = processedPlayers.filter(p => p.handValue.value === minValue);
             
             // 같은 족보가 여러 명이면 비기기
             if (losers.length > 1) {
@@ -733,6 +742,44 @@ class OnlineSeotdaGame {
         return deadPlayers.reduce((highest, current) => 
             current.handValue.value > highest.handValue.value ? current : highest
         );
+    }
+    
+    applySpecialHandRules(players) {
+        // 특수족보 규칙 적용
+        const processedPlayers = players.map(player => {
+            const newPlayer = { ...player };
+            
+            if (player.handValue.specialType === 'amhaeng') {
+                // 암행어사: 광땡만 이김, 없으면 1끗
+                const hasGwangDdaeng = players.some(p => 
+                    p.handValue.value >= 6998 && p.handValue.value <= 7000 && p !== player
+                );
+                if (!hasGwangDdaeng) {
+                    newPlayer.handValue = { value: 1, rank: '1끗 (암행어사)', isSpecial: true };
+                }
+            } else if (player.handValue.specialType === 'ddaeng') {
+                // 땡잡이: 땡만 이김, 없으면 0끗
+                const hasDdaeng = players.some(p => 
+                    p.handValue.value >= 5001 && p.handValue.value <= 5010 && p !== player
+                );
+                if (!hasDdaeng) {
+                    newPlayer.handValue = { value: 0, rank: '0끗 (땡잡이)', isSpecial: true };
+                }
+            } else if (player.handValue.specialType === 'gusa') {
+                // 구사파토: 2명 이상일 때 베팅 유지 (여기서는 일단 정상 처리)
+                // TODO: 구사파토 특별 처리 로직 추가 필요
+                console.log('구사파토 감지 - 특별 처리 필요');
+            }
+            
+            return newPlayer;
+        });
+        
+        console.log('특수족보 규칙 적용 결과:');
+        processedPlayers.forEach(p => {
+            console.log(`${p.player.name}: ${p.handValue.rank} (값: ${p.handValue.value})`);
+        });
+        
+        return processedPlayers;
     }
     
     handleTie(players) {
