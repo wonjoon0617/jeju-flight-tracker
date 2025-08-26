@@ -255,7 +255,9 @@ class OnlineSeotdaGame {
             this.showNewRoundButton();
         }
         
+        console.log('📱 updateGameStateFromServer에서 updateDisplay 호출 시작');
         this.updateDisplay();
+        console.log('📱 updateDisplay 호출 완료, updateBettingControls 시작');
         this.updateBettingControls();
     }
 
