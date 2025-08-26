@@ -605,9 +605,31 @@ class OnlineSeotdaGame {
     }
 
     compareHands(players) {
-        // 간단한 승부 판정 (실제로는 더 복잡한 로직 필요)
-        const winner = players[0]; // 임시로 첫 번째 플레이어를 승자로
-        this.logAction(`족보 비교 결과: ${winner.name}이(가) 승리!`, 'round');
+        // 모든 플레이어의 패 공개
+        this.revealingCards = true;
+        
+        // 각 플레이어의 족보 계산
+        let bestPlayer = players[0];
+        let bestValue = this.calculateHandValue(bestPlayer.cards, bestPlayer.folded);
+        
+        for (let i = 1; i < players.length; i++) {
+            const player = players[i];
+            const handValue = this.calculateHandValue(player.cards, player.folded);
+            
+            // 더 높은 족보를 가진 플레이어 찾기
+            if (handValue.value > bestValue.value) {
+                bestPlayer = player;
+                bestValue = handValue;
+            }
+        }
+        
+        // 패배자 기록 (다음 라운드 시작 순서용)
+        this.lastLoserIndex = this.players.findIndex(p => p.id === bestPlayer.id);
+        
+        this.logAction(`족보 비교 결과: ${bestPlayer.name}이(가) 승리! (${bestValue.rank})`, 'round');
+        
+        // 결과 표시를 위해 화면 업데이트
+        this.updateDisplay();
     }
 
     showNewRoundButton() {
@@ -648,6 +670,7 @@ class OnlineSeotdaGame {
         this.hasPlayerRaised = false;
         this.lastRaiserIndex = -1;
         this.callCount = 0;
+        this.revealingCards = false;
         
         for (let player of this.players) {
             player.folded = false;
