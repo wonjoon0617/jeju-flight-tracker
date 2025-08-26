@@ -588,15 +588,8 @@ class OnlineSeotdaGame {
         // 게임 상태를 'ended'로 설정
         this.gamePhase = 'ended';
         
-        if (activePlayers.length === 0) {
-            this.logAction('모든 플레이어가 다이했습니다. 새 라운드 시작.', 'round');
-        } else if (activePlayers.length === 1) {
-            const winner = activePlayers[0];
-            this.logAction(`${winner.name}이(가) 승리!`, 'round');
-        } else {
-            // 여러 플레이어가 남은 경우 족보 비교
-            this.compareHands(activePlayers);
-        }
+        // 모든 경우에 족보 비교를 통해 패배자 선정
+        this.compareHands(this.players.filter(p => true)); // 모든 플레이어 대상
         
         this.showNewRoundButton();
         
