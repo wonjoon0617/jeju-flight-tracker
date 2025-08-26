@@ -318,6 +318,16 @@ class OnlineSeotdaGame {
 
     // 로컬 액션들을 서버와 동기화
     async fold() {
+        // 중복 실행 방지
+        if (this.gamePhase === 'ended') {
+            console.log('게임이 종료되어 다이 불가');
+            return;
+        }
+        
+        // 버튼 즉시 비활성화
+        const foldBtn = document.getElementById('foldBtn');
+        if (foldBtn) foldBtn.disabled = true;
+        
         console.log('fold() 호출됨, playerId:', this.playerId);
         await this.sendAction('fold');
         // 로컬에서도 실행
@@ -325,12 +335,32 @@ class OnlineSeotdaGame {
     }
 
     async call() {
+        // 중복 실행 방지
+        if (this.gamePhase === 'ended') {
+            console.log('게임이 종료되어 콜 불가');
+            return;
+        }
+        
+        // 버튼 즉시 비활성화
+        const callBtn = document.getElementById('callBtn');
+        if (callBtn) callBtn.disabled = true;
+        
         console.log('call() 호출됨, playerId:', this.playerId);
         await this.sendAction('call');
         this.executeCall();
     }
 
     async raiseOne() {
+        // 중복 실행 방지
+        if (this.gamePhase === 'ended') {
+            console.log('게임이 종료되어 레이즈 불가');
+            return;
+        }
+        
+        // 버튼 즉시 비활성화
+        const raiseBtn = document.getElementById('raiseBtn1');
+        if (raiseBtn) raiseBtn.disabled = true;
+        
         console.log('raiseOne() 호출됨, playerId:', this.playerId);
         await this.sendAction('raise', { amount: 1 });
         this.executeRaise();
@@ -649,6 +679,9 @@ class OnlineSeotdaGame {
         
         // 결과 표시를 위해 화면 업데이트
         this.updateDisplay();
+        
+        // 베팅 버튼들 비활성화
+        this.updateBettingControls();
     }
     
     findLoserAmongDead(deadPlayers) {
@@ -860,7 +893,7 @@ class OnlineSeotdaGame {
         const currentPlayer = this.players[this.currentPlayerIndex];
         const isCurrentUserTurn = currentPlayer && currentPlayer.id === this.playerId;
         const activePlayers = this.players.filter(p => !p.folded);
-        const gameEnded = activePlayers.length <= 1;
+        const gameEnded = activePlayers.length <= 1 || this.gamePhase === 'ended';
         
         console.log('턴 제어 디버깅:', {
             currentPlayerIndex: this.currentPlayerIndex,
