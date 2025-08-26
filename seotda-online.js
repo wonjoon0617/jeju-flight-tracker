@@ -854,6 +854,15 @@ class OnlineSeotdaGame {
         document.getElementById('bettingRound').textContent = this.bettingRound;
         document.getElementById('potAmount').textContent = this.totalBet;
         
+        // 카드 데이터 디버깅
+        console.log('🃏 updateDisplay 카드 데이터 체크:');
+        this.players.forEach((player, index) => {
+            console.log(`${player.name}: 카드 ${player.cards?.length || 0}장, revealingCards: ${this.revealingCards}`);
+            if (player.cards) {
+                console.log(`  카드: ${player.cards.map(c => `${c.month}${c.isGwang ? '광' : '월'}`).join(', ')}`);
+            }
+        });
+        
         const container = document.getElementById('playersContainer');
         container.innerHTML = '';
         
