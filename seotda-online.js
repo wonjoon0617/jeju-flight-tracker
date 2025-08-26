@@ -634,9 +634,9 @@ class OnlineSeotdaGame {
             console.log('한 명만 살아있음, 죽은 플레이어 중 최고 족보 찾기');
             loser = this.findLoserAmongDead(deadPlayers);
         } else if (alivePlayers.length === 0) {
-            // 모두 죽은 경우: 같은 족보 상쇄 후 최저 족보가 패배
-            console.log('모두 죽음, 상쇄 로직 적용');
-            loser = this.findLoserWithCancellation(deadPlayers);
+            // 모두 죽은 경우: 죽은 플레이어 중 최고 족보가 패배
+            console.log('모두 죽음, 죽은 플레이어 중 최고 족보가 패배');
+            loser = this.findLoserAmongDead(deadPlayers);
         } else {
             // 여러 명 살아있는 경우: 살아있는 플레이어 중 최저 족보가 패배
             console.log('여러 명 살아있음, 최저 족보 찾기');
@@ -662,45 +662,6 @@ class OnlineSeotdaGame {
         // 죽은 플레이어 중 가장 높은 족보가 패배
         return deadPlayers.reduce((highest, current) => 
             current.handValue.value > highest.handValue.value ? current : highest
-        );
-    }
-    
-    findLoserWithCancellation(deadPlayers) {
-        // 같은 족보끼리 상쇄 후 남은 것 중 최저가 패배
-        const handCounts = {};
-        
-        // 각 족보별 개수 세기
-        deadPlayers.forEach(p => {
-            const rank = p.handValue.rank;
-            if (!handCounts[rank]) {
-                handCounts[rank] = [];
-            }
-            handCounts[rank].push(p);
-        });
-        
-        console.log('족보별 개수:', Object.keys(handCounts).map(rank => 
-            `${rank}: ${handCounts[rank].length}명`
-        ).join(', '));
-        
-        // 홀수 개인 족보들만 남김 (상쇄되지 않은 것들)
-        const remainingPlayers = [];
-        Object.values(handCounts).forEach(players => {
-            if (players.length % 2 === 1) {
-                // 홀수 개면 하나 남음
-                remainingPlayers.push(players[0]);
-            }
-        });
-        
-        if (remainingPlayers.length === 0) {
-            // 모두 상쇄된 경우 원래 최저 족보가 패배
-            return deadPlayers.reduce((lowest, current) => 
-                current.handValue.value < lowest.handValue.value ? current : lowest
-            );
-        }
-        
-        // 남은 것 중 최저 족보가 패배
-        return remainingPlayers.reduce((lowest, current) => 
-            current.handValue.value < lowest.handValue.value ? current : lowest
         );
     }
 
