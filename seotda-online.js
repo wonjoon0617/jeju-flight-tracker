@@ -277,6 +277,9 @@ class OnlineSeotdaGame {
             case 'start_game':
                 this.handleRemoteStartGame(action);
                 break;
+            case 'game_result':
+                this.handleRemoteGameResult(action);
+                break;
         }
     }
 
@@ -284,6 +287,13 @@ class OnlineSeotdaGame {
     handleRemoteStartGame(action) {
         console.log('원격 게임 시작 액션 받음:', action);
         this.executeStartGame();
+    }
+
+    handleRemoteGameResult(action) {
+        console.log('원격 게임 결과 액션 받음:', action);
+        if (action.data && action.data.message) {
+            this.logAction(action.data.message, 'round');
+        }
     }
 
     handleRemoteFold(action) {
@@ -678,7 +688,18 @@ class OnlineSeotdaGame {
         this.lastLoserIndex = this.players.findIndex(p => p.id === loser.player.id);
         
         console.log(`최종 패배자: ${loser.player.name} (${loser.handValue.rank})`);
-        this.logAction(`족보 비교 결과: ${loser.player.name}이(가) 패배! (${loser.handValue.rank})`, 'round');
+        // 패배자 결과를 서버를 통해 모든 플레이어에게 전파
+        const resultMessage = `족보 비교 결과: ${loser.player.name}이(가) 패배! (${loser.handValue.rank})`;
+        this.logAction(resultMessage, 'round');
+        
+        // 서버를 통해 게임 결과 전파
+        if (this.isHost) {
+            this.sendAction('game_result', { 
+                message: resultMessage,
+                winner: loser.player.name,
+                winnerHand: loser.handValue.rank
+            });
+        }
         
         // 게임 상태를 서버에 동기화 (카드 공개 상태 포함)
         console.log(`🔄 방장이 서버에 revealingCards=${this.revealingCards} 상태 전송 중...`);
