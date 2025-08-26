@@ -225,6 +225,10 @@ class OnlineSeotdaGame {
         this.callCount = gameState.callCount ?? 0;
         this.revealingCards = gameState.revealingCards ?? false;
         
+        // revealingCards 상태 변화 로그
+        console.log(`📺 카드 공개 상태 업데이트: ${this.revealingCards}`);
+        console.log(`🎮 게임 페이즈: ${this.gamePhase}`);
+        
         console.log(`턴 변경: ${oldPlayerIndex} → ${this.currentPlayerIndex}`);
         console.log(`lastRaiserIndex 설정: ${gameState.lastRaiserIndex} → ${this.lastRaiserIndex}`);
         
@@ -675,6 +679,7 @@ class OnlineSeotdaGame {
         this.logAction(`족보 비교 결과: ${loser.player.name}이(가) 패배! (${loser.handValue.rank})`, 'round');
         
         // 게임 상태를 서버에 동기화 (카드 공개 상태 포함)
+        console.log(`🔄 방장이 서버에 revealingCards=${this.revealingCards} 상태 전송 중...`);
         this.updateGameStateOnServer();
         
         // 결과 표시를 위해 화면 업데이트
