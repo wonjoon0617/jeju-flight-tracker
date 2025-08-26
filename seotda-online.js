@@ -19,6 +19,7 @@ class OnlineSeotdaGame {
         this.revealingCards = false;
         this.revealIndex = 0;
         this.callCount = 0; // 현재 베팅 라운드에서 콜한 플레이어 수
+        this.keepBetting = false; // 무승부나 구사파토 시 베팅 유지 플래그
         
         // 온라인 관련
         this.roomCode = null;
@@ -689,6 +690,34 @@ class OnlineSeotdaGame {
             // 여러 명 살아있는 경우: 특수족보 규칙 적용 후 최저 족보가 패배
             console.log('여러 명 살아있음, 특수족보 규칙 적용');
             
+            // 구사파토 먼저 확인 (2명 이상일 때 베팅 유지)
+            const gusaPlayers = alivePlayers.filter(p => p.handValue.specialType === 'gusa');
+            if (gusaPlayers.length > 0 && alivePlayers.length >= 2) {
+                console.log(`구사파토 ${gusaPlayers.length}명 감지, 베팅 유지하고 다음 판 진행`);
+                const gusaMessage = `구사파토 승리! ${gusaPlayers.map(p => p.player.name).join(', ')} - 베팅 유지하고 다음 판 진행`;
+                
+                this.logAction(gusaMessage, 'round');
+                
+                // 서버를 통해 구사파토 결과 전파
+                if (this.isHost) {
+                    this.sendAction('game_result', { 
+                        message: gusaMessage,
+                        isGusa: true,
+                        gusaPlayers: gusaPlayers.map(p => p.player.name).join(', ')
+                    });
+                }
+                
+                // 베팅 유지 및 화면 업데이트
+                this.keepBetting = true;
+                this.revealingCards = true;
+                console.log(`🔄 방장이 서버에 revealingCards=${this.revealingCards} 상태 전송 중... (구사파토)`);
+                this.updateGameStateOnServer();
+                this.updateDisplay();
+                this.updateBettingControls();
+                this.showNewRoundButton();
+                return;
+            }
+            
             // 특수족보 규칙 적용
             const processedPlayers = this.applySpecialHandRules(alivePlayers);
             
@@ -810,6 +839,7 @@ class OnlineSeotdaGame {
         
         // 비기기 상황에서는 베팅을 유지하고 새 라운드로 바로 진행
         // lastLoserIndex는 설정하지 않음 (순서 변경 없음)
+        this.keepBetting = true; // 베팅 유지 플래그 설정
         this.showNewRoundButton();
     }
 
@@ -845,13 +875,20 @@ class OnlineSeotdaGame {
             this.currentPlayerIndex = 0;
         }
         
-        this.totalBet = 0;
+        // 베팅 유지 여부에 따라 totalBet 처리
+        if (!this.keepBetting) {
+            this.totalBet = 0;
+        } else {
+            console.log(`베팅 유지: ${this.totalBet}잔`);
+        }
+        
         this.bettingRound = 1;
         this.hasPlayerCalled = false;
         this.hasPlayerRaised = false;
         this.lastRaiserIndex = -1;
         this.callCount = 0;
         this.revealingCards = false;
+        this.keepBetting = false; // 플래그 리셋
         
         for (let player of this.players) {
             player.folded = false;
