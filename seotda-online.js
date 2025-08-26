@@ -610,36 +610,98 @@ class OnlineSeotdaGame {
         // 모든 플레이어의 패 공개
         this.revealingCards = true;
         
-        // 각 플레이어의 족보 계산
-        let bestPlayer = players[0];
-        let bestValue = this.calculateHandValue(bestPlayer.cards, bestPlayer.folded);
+        console.log('=== 섯다 승부 판정 시작 ===');
         
-        for (let i = 1; i < players.length; i++) {
-            const player = players[i];
+        // 각 플레이어의 족보 계산
+        const playerHands = players.map(player => {
             const handValue = this.calculateHandValue(player.cards, player.folded);
-            
-            // 디버깅 로그 추가
-            console.log(`${player.name}: ${handValue.rank} (값: ${handValue.value})`);
-            console.log(`현재 최고: ${bestPlayer.name}: ${bestValue.rank} (값: ${bestValue.value})`);
-            
-            // 더 높은 족보를 가진 플레이어 찾기
-            if (handValue.value > bestValue.value) {
-                bestPlayer = player;
-                bestValue = handValue;
-                console.log(`새로운 승자: ${bestPlayer.name}`);
-            }
+            console.log(`${player.name}: ${handValue.rank} (값: ${handValue.value}) - ${player.folded ? '다이' : '살아있음'}`);
+            return {
+                player,
+                handValue,
+                folded: player.folded
+            };
+        });
+        
+        // 살아있는 플레이어와 죽은 플레이어 분리
+        const alivePlayers = playerHands.filter(p => !p.folded);
+        const deadPlayers = playerHands.filter(p => p.folded);
+        
+        let loser;
+        
+        if (alivePlayers.length === 1) {
+            // 한 명만 살아있는 경우: 죽은 플레이어 중 최고 족보가 패배
+            console.log('한 명만 살아있음, 죽은 플레이어 중 최고 족보 찾기');
+            loser = this.findLoserAmongDead(deadPlayers);
+        } else if (alivePlayers.length === 0) {
+            // 모두 죽은 경우: 같은 족보 상쇄 후 최저 족보가 패배
+            console.log('모두 죽음, 상쇄 로직 적용');
+            loser = this.findLoserWithCancellation(deadPlayers);
+        } else {
+            // 여러 명 살아있는 경우: 살아있는 플레이어 중 최저 족보가 패배
+            console.log('여러 명 살아있음, 최저 족보 찾기');
+            loser = alivePlayers.reduce((worst, current) => 
+                current.handValue.value < worst.handValue.value ? current : worst
+            );
         }
         
         // 패배자 기록 (다음 라운드 시작 순서용)
-        this.lastLoserIndex = this.players.findIndex(p => p.id === bestPlayer.id);
+        this.lastLoserIndex = this.players.findIndex(p => p.id === loser.player.id);
         
-        this.logAction(`족보 비교 결과: ${bestPlayer.name}이(가) 승리! (${bestValue.rank})`, 'round');
+        console.log(`최종 패배자: ${loser.player.name} (${loser.handValue.rank})`);
+        this.logAction(`족보 비교 결과: ${loser.player.name}이(가) 패배! (${loser.handValue.rank})`, 'round');
         
         // 게임 상태를 서버에 동기화 (카드 공개 상태 포함)
         this.updateGameStateOnServer();
         
         // 결과 표시를 위해 화면 업데이트
         this.updateDisplay();
+    }
+    
+    findLoserAmongDead(deadPlayers) {
+        // 죽은 플레이어 중 가장 높은 족보가 패배
+        return deadPlayers.reduce((highest, current) => 
+            current.handValue.value > highest.handValue.value ? current : highest
+        );
+    }
+    
+    findLoserWithCancellation(deadPlayers) {
+        // 같은 족보끼리 상쇄 후 남은 것 중 최저가 패배
+        const handCounts = {};
+        
+        // 각 족보별 개수 세기
+        deadPlayers.forEach(p => {
+            const rank = p.handValue.rank;
+            if (!handCounts[rank]) {
+                handCounts[rank] = [];
+            }
+            handCounts[rank].push(p);
+        });
+        
+        console.log('족보별 개수:', Object.keys(handCounts).map(rank => 
+            `${rank}: ${handCounts[rank].length}명`
+        ).join(', '));
+        
+        // 홀수 개인 족보들만 남김 (상쇄되지 않은 것들)
+        const remainingPlayers = [];
+        Object.values(handCounts).forEach(players => {
+            if (players.length % 2 === 1) {
+                // 홀수 개면 하나 남음
+                remainingPlayers.push(players[0]);
+            }
+        });
+        
+        if (remainingPlayers.length === 0) {
+            // 모두 상쇄된 경우 원래 최저 족보가 패배
+            return deadPlayers.reduce((lowest, current) => 
+                current.handValue.value < lowest.handValue.value ? current : lowest
+            );
+        }
+        
+        // 남은 것 중 최저 족보가 패배
+        return remainingPlayers.reduce((lowest, current) => 
+            current.handValue.value < lowest.handValue.value ? current : lowest
+        );
     }
 
     showNewRoundButton() {
