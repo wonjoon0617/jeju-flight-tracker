@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>제주도 항공권 가격 추적기</title>
-    <meta name="description" content="제주도 항공권 최저가를 찾아주는 스마트한 가격 추적 시스템">
-    <meta name="keywords" content="제주도, 항공권, 최저가, 가격비교, 항공편검색">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✈️</text></svg>">
+    <title>랜덤 숫자 뽑기 팀 배정 게임</title>
+    <meta name="description" content="10명의 플레이어를 2팀으로 나누고 각 역할에 랜덤 숫자를 배정하는 게임">
+    <meta name="keywords" content="팀배정, 랜덤게임, 숫자뽑기, 게임">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎲</text></svg>">
     <style>
         * {
             margin: 0;
@@ -16,6 +16,8 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             padding: 20px;
@@ -31,10 +33,10 @@
         }
 
         .header {
-            background: linear-gradient(45deg, #4285f4, #34a853);
+            background: linear-gradient(45deg, #FF6B6B, #4ECDC4);
             color: white;
-            padding: 30px;
             text-align: center;
+            padding: 30px 20px;
         }
 
         .header h1 {
@@ -43,269 +45,175 @@
         }
 
         .header p {
-            opacity: 0.9;
             font-size: 1.1em;
+            opacity: 0.9;
         }
 
         .controls {
             padding: 30px;
+            text-align: center;
             background: #f8f9fa;
-            border-bottom: 1px solid #e9ecef;
-        }
-
-        .form-group {
-            display: flex;
-            gap: 20px;
-            align-items: end;
-            flex-wrap: wrap;
-            margin-bottom: 20px;
-        }
-
-        .form-field {
-            flex: 1;
-            min-width: 150px;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: 600;
-            color: #333;
-        }
-
-        input, select {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #ddd;
-            border-radius: 8px;
-            font-size: 14px;
-            transition: border-color 0.3s;
-        }
-
-        input:focus, select:focus {
-            outline: none;
-            border-color: #4285f4;
+            border-bottom: 1px solid #eee;
         }
 
         .btn {
-            background: linear-gradient(45deg, #4285f4, #34a853);
+            background: linear-gradient(45deg, #667eea, #764ba2);
             color: white;
             border: none;
-            padding: 12px 30px;
-            border-radius: 8px;
-            cursor: pointer;
+            padding: 15px 30px;
+            margin: 10px;
+            border-radius: 50px;
             font-size: 16px;
-            font-weight: 600;
-            transition: transform 0.2s;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
         .btn:hover {
             transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
         }
 
-        .btn:disabled {
-            background: #ccc;
-            cursor: not-allowed;
-            transform: none;
+        .btn.secondary {
+            background: linear-gradient(45deg, #95e1d3, #fce38a);
+            color: #333;
         }
 
-        .price-filters {
-            display: flex;
-            gap: 15px;
-            align-items: center;
-            margin-top: 15px;
-            flex-wrap: wrap;
+        .btn.danger {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
         }
 
-        .results {
+        .game-result {
             padding: 30px;
+            display: none;
         }
 
-        .status {
+        .teams-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .team {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+        }
+
+        .team:nth-child(2) {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+            box-shadow: 0 10px 30px rgba(255, 107, 107, 0.3);
+        }
+
+        .team h3 {
+            font-size: 1.8em;
+            margin-bottom: 20px;
             text-align: center;
-            padding: 20px;
-            font-size: 18px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .role-item {
+            background: rgba(255,255,255,0.1);
+            margin: 10px 0;
+            padding: 15px;
+            border-radius: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .role-name {
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+
+        .player-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .number-badge {
+            background: rgba(255,255,255,0.9);
+            color: #333;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+
+        .used-numbers {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        .used-numbers h3 {
+            color: #333;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .stat-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .stat-role {
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .stat-count {
+            font-size: 1.2em;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .stat-numbers {
+            font-size: 0.9em;
             color: #666;
+            word-wrap: break-word;
         }
 
         .loading {
+            text-align: center;
+            padding: 40px;
+            color: #667eea;
+        }
+
+        .loading::after {
+            content: '';
             display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #4285f4;
+            width: 40px;
+            height: 40px;
+            border: 4px solid #667eea;
             border-radius: 50%;
+            border-top-color: transparent;
             animation: spin 1s linear infinite;
         }
 
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .flight-card {
-            background: white;
-            border: 1px solid #e9ecef;
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 15px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-            transition: transform 0.2s;
-        }
-
-        .flight-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-        }
-
-        .flight-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-
-        .airline {
-            font-weight: 600;
-            font-size: 18px;
-            color: #333;
-        }
-
-        .price {
-            font-size: 24px;
-            font-weight: 700;
-            color: #4285f4;
-        }
-
-        .flight-info {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 15px;
-        }
-
-        .info-item {
-            text-align: center;
-        }
-
-        .info-label {
-            font-size: 12px;
-            color: #666;
-            margin-bottom: 5px;
-        }
-
-        .info-value {
-            font-weight: 600;
-            color: #333;
-        }
-
-        .alert {
-            background: #d4edda;
-            color: #155724;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            border-left: 4px solid #28a745;
-        }
-
-        .error {
-            background: #f8d7da;
-            color: #721c24;
-            border-left-color: #dc3545;
-        }
-
-        .time-slot {
-            background: white;
-            border: 2px solid #e9ecef;
-            border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 15px;
-            transition: all 0.3s;
-            position: relative;
-        }
-
-        .time-slot:hover {
-            border-color: #4285f4;
-            box-shadow: 0 4px 15px rgba(66, 133, 244, 0.1);
-        }
-
-        .time-slot.best-price {
-            border-color: #28a745;
-            background: linear-gradient(45deg, #d4edda, #ffffff);
-        }
-
-        .time-slot-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-
-        .time-range {
-            font-size: 18px;
-            font-weight: 600;
-            color: #333;
-        }
-
-        .min-price {
-            font-size: 20px;
-            font-weight: 700;
-            color: #4285f4;
-        }
-
-        .best-price .min-price {
-            color: #28a745;
-        }
-
-        .flight-count {
-            font-size: 12px;
-            color: #666;
-            background: #f8f9fa;
-            padding: 4px 8px;
-            border-radius: 12px;
-        }
-
-        .price-trend {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            font-size: 14px;
-        }
-
-        .trend-up { color: #e74c3c; }
-        .trend-down { color: #27ae60; }
-        .trend-stable { color: #f39c12; }
-
-        .chart-bar {
-            background: linear-gradient(45deg, #4285f4, #34a853);
-            border-radius: 4px 4px 0 0;
-            position: absolute;
-            bottom: 0;
-            min-height: 5px;
-            transition: all 0.3s;
-        }
-
-        .chart-bar:hover {
-            opacity: 0.8;
-        }
-
-        .chart-time {
-            position: absolute;
-            bottom: -25px;
-            font-size: 10px;
-            color: #666;
-            transform: translateX(-50%);
-        }
-
-        .chart-price {
-            position: absolute;
-            top: -25px;
-            font-size: 10px;
-            color: #333;
-            transform: translateX(-50%);
-            background: white;
-            padding: 2px 4px;
-            border-radius: 4px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+            to {
+                transform: rotate(360deg);
+            }
         }
 
         .footer {
@@ -317,35 +225,22 @@
         }
 
         @media (max-width: 768px) {
-            body {
-                padding: 10px;
+            .teams-container {
+                grid-template-columns: 1fr;
             }
             
             .header h1 {
                 font-size: 2em;
             }
             
-            .form-group {
-                flex-direction: column;
+            .stats-grid {
+                grid-template-columns: 1fr;
             }
             
-            .form-field {
-                min-width: 100%;
-            }
-            
-            .price-filters {
-                flex-direction: column;
-                align-items: stretch;
-            }
-
-            .time-slot-header {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 5px;
-            }
-
-            #chartContainer {
-                height: 200px;
+            .btn {
+                padding: 12px 20px;
+                font-size: 14px;
+                margin: 5px;
             }
         }
     </style>
@@ -353,117 +248,255 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>✈️ 제주도 항공권 가격 추적기</h1>
-            <p>원하는 가격대의 항공권을 찾아드립니다</p>
+            <h1>🎲 랜덤 숫자 뽑기 게임</h1>
+            <p>10명의 플레이어를 2팀으로 나누고 각 역할에 랜덤 숫자를 배정합니다</p>
         </div>
 
         <div class="controls">
-            <div class="form-group">
-                <div class="form-field">
-                    <label for="departure">출발지</label>
-                    <select id="departure">
-                        <option value="ICN">인천국제공항 (ICN)</option>
-                        <option value="GMP">김포국제공항 (GMP)</option>
-                        <option value="PUS">김해국제공항 (PUS)</option>
-                        <option value="TAE">대구국제공항 (TAE)</option>
-                        <option value="CJU">제주국제공항 (CJU)</option>
-                    </select>
-                </div>
-
-                <div class="form-field">
-                    <label for="destination">목적지</label>
-                    <select id="destination">
-                        <option value="CJU">제주국제공항 (CJU)</option>
-                        <option value="ICN">인천국제공항 (ICN)</option>
-                        <option value="GMP">김포국제공항 (GMP)</option>
-                        <option value="PUS">김해국제공항 (PUS)</option>
-                    </select>
-                </div>
-
-                <div class="form-field">
-                    <label for="departDate">출발일</label>
-                    <input type="date" id="departDate">
-                </div>
-
-                <div class="form-field">
-                    <label for="returnDate">도착일 (편도일 경우 비워두세요)</label>
-                    <input type="date" id="returnDate">
-                </div>
-
-                <div class="form-field">
-                    <button class="btn" id="searchBtn">검색하기</button>
-                </div>
-            </div>
-
-            <div class="price-filters">
-                <div class="form-field" style="max-width: 200px;">
-                    <label for="maxPrice">최대 가격 (원)</label>
-                    <input type="number" id="maxPrice" placeholder="예: 150000" min="0">
-                </div>
-                <div class="form-field" style="max-width: 200px;">
-                    <label for="minPrice">최소 가격 (원)</label>
-                    <input type="number" id="minPrice" placeholder="예: 50000" min="0">
-                </div>
-                <div class="form-field" style="max-width: 150px;">
-                    <label for="airline">항공사</label>
-                    <select id="airline">
-                        <option value="">전체</option>
-                        <option value="KE">대한항공</option>
-                        <option value="OZ">아시아나항공</option>
-                        <option value="7C">제주항공</option>
-                        <option value="ZE">이스타항공</option>
-                        <option value="TW">티웨이항공</option>
-                        <option value="LJ">진에어</option>
-                        <option value="BX">에어부산</option>
-                    </select>
-                </div>
-                <button class="btn" id="filterBtn">필터 적용</button>
-                <button class="btn" id="toggleViewBtn" style="margin-left: 10px; background: linear-gradient(45deg, #ff6b6b, #ffa726);">시간별 최저가 보기</button>
-            </div>
+            <button class="btn" onclick="startGame()">🚀 게임 시작</button>
+            <button class="btn secondary" onclick="showUsedNumbers()">📊 사용된 숫자 보기</button>
+            <button class="btn danger" onclick="resetUsedNumbers()">🔄 숫자 초기화</button>
         </div>
 
-        <div class="view-controls" style="padding: 20px 30px; background: #f8f9fa; border-bottom: 1px solid #e9ecef; display: none;" id="timeControls">
-            <div style="display: flex; gap: 20px; align-items: center; flex-wrap: wrap;">
-                <div class="form-field" style="max-width: 200px;">
-                    <label for="timeRange">시간대 선택</label>
-                    <select id="timeRange">
-                        <option value="all">전체 시간</option>
-                        <option value="morning">오전 (06:00-12:00)</option>
-                        <option value="afternoon">오후 (12:00-18:00)</option>
-                        <option value="evening">저녁 (18:00-24:00)</option>
-                        <option value="custom">사용자 정의</option>
-                    </select>
-                </div>
-                <div class="form-field" style="max-width: 150px; display: none;" id="startTimeDiv">
-                    <label for="startTime">시작 시간</label>
-                    <input type="time" id="startTime" value="06:00">
-                </div>
-                <div class="form-field" style="max-width: 150px; display: none;" id="endTimeDiv">
-                    <label for="endTime">종료 시간</label>
-                    <input type="time" id="endTime" value="23:59">
-                </div>
-                <button class="btn" id="updateTimeViewBtn">업데이트</button>
-            </div>
+        <div id="loading" class="loading" style="display: none;">
+            <p>팀을 배정하고 숫자를 생성하는 중...</p>
         </div>
 
-        <div class="price-chart" style="padding: 20px 30px; background: white; display: none;" id="priceChart">
-            <h3 style="margin-bottom: 20px; color: #333;">📊 시간대별 최저가 차트</h3>
-            <div id="chartContainer" style="height: 300px; background: #f8f9fa; border-radius: 10px; padding: 20px; position: relative; overflow-x: auto;"></div>
-        </div>
+        <div id="gameResult" class="game-result"></div>
+        
+        <div id="usedNumbers" class="used-numbers" style="display: none;"></div>
 
-        <div class="results">
-            <div class="status" id="status">
-                검색 조건을 입력하고 검색하기 버튼을 눌러주세요.
-            </div>
-            <div id="flightList"></div>
-        </div>
 
         <div class="footer">
-            <p>💡 이 사이트는 시뮬레이션 데이터를 사용합니다. 실제 예약을 위해서는 항공사 홈페이지를 방문해주세요.</p>
-            <p style="margin-top: 10px; font-size: 14px;">Made with ❤️ for travelers</p>
+            <p>🎮 각 역할군별 숫자 범위: 탑(1-58), 정글(1-55), 미드(1-59), 원딜(1-30), 서폿(1-47)</p>
+            <p style="margin-top: 10px; font-size: 14px;">Made with ❤️ for gamers</p>
         </div>
     </div>
 
-    <script src="flight-tracker.js"></script>
+    <script>
+        class TeamAssignmentGame {
+            constructor() {
+                this.players = ["원준", "영준", "장혁", "현민", "재혁", "태혁", "민재", "민기", "지성", "성일"];
+                this.roles = ["탑", "정글", "미드", "원딜", "서폿"];
+                this.roleRanges = {
+                    "탑": [1, 58],
+                    "정글": [1, 55],
+                    "미드": [1, 59],
+                    "원딜": [1, 30],
+                    "서폿": [1, 47]
+                };
+                this.usedNumbers = this.loadUsedNumbers();
+            }
+
+            loadUsedNumbers() {
+                const stored = localStorage.getItem('teamGameUsedNumbers');
+                if (stored) {
+                    return JSON.parse(stored);
+                }
+                return {
+                    "탑": [],
+                    "정글": [],
+                    "미드": [],
+                    "원딜": [],
+                    "서폿": []
+                };
+            }
+
+            saveUsedNumbers() {
+                localStorage.setItem('teamGameUsedNumbers', JSON.stringify(this.usedNumbers));
+            }
+
+            getUniqueNumber(role) {
+                const [min, max] = this.roleRanges[role];
+                const used = new Set(this.usedNumbers[role]);
+                const available = [];
+                
+                for (let i = min; i <= max; i++) {
+                    if (!used.has(i)) {
+                        available.push(i);
+                    }
+                }
+
+                if (available.length === 0) {
+                    throw new Error(`${role} 역할에 사용 가능한 숫자가 모두 소진되었습니다!`);
+                }
+
+                const number = available[Math.floor(Math.random() * available.length)];
+                this.usedNumbers[role].push(number);
+                return number;
+            }
+
+            assignTeams() {
+                const otherPlayers = this.players.filter(p => p !== "원준" && p !== "영준");
+                
+                // Fisher-Yates shuffle
+                for (let i = otherPlayers.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [otherPlayers[i], otherPlayers[j]] = [otherPlayers[j], otherPlayers[i]];
+                }
+
+                let team1, team2;
+                if (Math.random() < 0.5) {
+                    team1 = ["원준", ...otherPlayers.slice(0, 4)];
+                    team2 = ["영준", ...otherPlayers.slice(4)];
+                } else {
+                    team1 = ["영준", ...otherPlayers.slice(0, 4)];
+                    team2 = ["원준", ...otherPlayers.slice(4)];
+                }
+
+                return [team1, team2];
+            }
+
+            assignRoles(team) {
+                const shuffledTeam = [...team];
+                for (let i = shuffledTeam.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [shuffledTeam[i], shuffledTeam[j]] = [shuffledTeam[j], shuffledTeam[i]];
+                }
+
+                const roleAssignment = {};
+                this.roles.forEach((role, index) => {
+                    const player = shuffledTeam[index];
+                    const number = this.getUniqueNumber(role);
+                    roleAssignment[role] = {
+                        player: player,
+                        number: number
+                    };
+                });
+
+                return roleAssignment;
+            }
+
+            generateGame() {
+                const [team1, team2] = this.assignTeams();
+                const team1Roles = this.assignRoles(team1);
+                const team2Roles = this.assignRoles(team2);
+
+                this.saveUsedNumbers();
+
+                return {
+                    team1: { players: team1, roles: team1Roles },
+                    team2: { players: team2, roles: team2Roles }
+                };
+            }
+
+            getUsedNumbersStats() {
+                const stats = {};
+                this.roles.forEach(role => {
+                    const used = this.usedNumbers[role];
+                    const [min, max] = this.roleRanges[role];
+                    const total = max - min + 1;
+                    stats[role] = {
+                        used: used.length,
+                        total: total,
+                        numbers: used.sort((a, b) => a - b)
+                    };
+                });
+                return stats;
+            }
+
+            resetUsedNumbers() {
+                this.usedNumbers = {
+                    "탑": [],
+                    "정글": [],
+                    "미드": [],
+                    "원딜": [],
+                    "서폿": []
+                };
+                this.saveUsedNumbers();
+            }
+        }
+
+        const game = new TeamAssignmentGame();
+
+        function startGame() {
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('gameResult').style.display = 'none';
+            document.getElementById('usedNumbers').style.display = 'none';
+
+            setTimeout(() => {
+                try {
+                    const result = game.generateGame();
+                    displayGameResult(result);
+                } catch (error) {
+                    alert(`오류: ${error.message}`);
+                } finally {
+                    document.getElementById('loading').style.display = 'none';
+                }
+            }, 500);
+        }
+
+        function displayGameResult(result) {
+            const resultDiv = document.getElementById('gameResult');
+            
+            let html = `
+                <div class="teams-container">
+                    <div class="team">
+                        <h3>🔵 1팀</h3>
+                        ${game.roles.map(role => `
+                            <div class="role-item">
+                                <span class="role-name">${role}</span>
+                                <div class="player-info">
+                                    <span>${result.team1.roles[role].player}</span>
+                                    <span class="number-badge">#${result.team1.roles[role].number}</span>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                    
+                    <div class="team">
+                        <h3>🔴 2팀</h3>
+                        ${game.roles.map(role => `
+                            <div class="role-item">
+                                <span class="role-name">${role}</span>
+                                <div class="player-info">
+                                    <span>${result.team2.roles[role].player}</span>
+                                    <span class="number-badge">#${result.team2.roles[role].number}</span>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+            
+            resultDiv.innerHTML = html;
+            resultDiv.style.display = 'block';
+        }
+
+        function showUsedNumbers() {
+            const stats = game.getUsedNumbersStats();
+            const usedDiv = document.getElementById('usedNumbers');
+            
+            let html = `
+                <h3>📊 사용된 숫자 현황</h3>
+                <div class="stats-grid">
+                    ${game.roles.map(role => {
+                        const stat = stats[role];
+                        return `
+                            <div class="stat-item">
+                                <div class="stat-role">${role}</div>
+                                <div class="stat-count">${stat.used}/${stat.total} 사용됨</div>
+                                <div class="stat-numbers">
+                                    ${stat.numbers.length > 0 ? stat.numbers.join(', ') : '사용된 숫자 없음'}
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+            
+            usedDiv.innerHTML = html;
+            usedDiv.style.display = 'block';
+            document.getElementById('gameResult').style.display = 'none';
+        }
+
+        function resetUsedNumbers() {
+            if (confirm('정말로 사용된 숫자를 모두 초기화하시겠습니까?')) {
+                game.resetUsedNumbers();
+                alert('🔄 사용된 숫자가 초기화되었습니다.');
+                document.getElementById('usedNumbers').style.display = 'none';
+            }
+        }
+    </script>
 </body>
 </html>
